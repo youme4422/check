@@ -7,7 +7,6 @@ import { useI18n } from '../i18n/I18nProvider';
 import { EmergencyContactsScreen } from '../screens/EmergencyContactsScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { HomeScreen } from '../screens/HomeScreen';
-import { MessengerScreen } from '../screens/MessengerScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { syncScheduledNotifications } from '../storage/notifications';
 import { useAppState } from '../storage/AppStateContext';
@@ -17,7 +16,6 @@ export type RootStackParamList = {
   EmergencyContacts: undefined;
   Settings: undefined;
   History: undefined;
-  Messenger: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -78,7 +76,6 @@ export function AppNavigator() {
           component={EmergencyContactsScreen}
           options={{ title: t('contacts.title') }}
         />
-        <Stack.Screen name="Messenger" component={MessengerScreen} options={{ title: 'Messenger' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t('settings.title') }} />
         <Stack.Screen name="History" component={HistoryScreen} options={{ title: t('history.title') }} />
       </Stack.Navigator>

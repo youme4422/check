@@ -4,7 +4,6 @@ import {
   DEFAULT_APP_STATE,
   type AppState,
   type Contact,
-  type MessengerProfile,
 } from './types';
 import {
   loadAppState,
@@ -13,7 +12,6 @@ import {
   saveContacts,
   saveIntervalHours,
   saveLastCheckInAt,
-  saveMessengerProfile,
   saveNotificationsEnabled,
 } from './storage';
 
@@ -22,7 +20,6 @@ type AppStateContextValue = AppState & {
   recordCheckIn: () => Promise<string>;
   setIntervalSetting: (value: number) => Promise<void>;
   setNotificationsSetting: (value: boolean) => Promise<void>;
-  setMessengerProfile: (value: MessengerProfile) => Promise<void>;
   upsertContact: (contact: Contact) => Promise<void>;
   removeContact: (contactId: string) => Promise<void>;
   clearHistory: () => Promise<void>;
@@ -81,11 +78,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     await saveNotificationsEnabled(value);
   };
 
-  const setMessengerProfileValue = async (value: MessengerProfile) => {
-    setState((current) => ({ ...current, messengerProfile: value }));
-    await saveMessengerProfile(value);
-  };
-
   const upsertContact = async (contact: Contact) => {
     const existingIndex = state.contacts.findIndex((item) => item.id === contact.id);
     const nextContacts = [...state.contacts];
@@ -129,7 +121,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         recordCheckIn,
         setIntervalSetting,
         setNotificationsSetting,
-        setMessengerProfile: setMessengerProfileValue,
         upsertContact,
         removeContact,
         clearHistory,

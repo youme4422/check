@@ -8,7 +8,6 @@ const STORAGE_KEYS = {
   intervalHours: '@check:intervalHours',
   notificationsEnabled: '@check:notificationsEnabled',
   contacts: '@check:contacts',
-  messengerProfile: '@check:messengerProfile',
   locale: '@check:locale',
 } as const;
 
@@ -19,7 +18,6 @@ export async function loadAppState(): Promise<AppState> {
     STORAGE_KEYS.intervalHours,
     STORAGE_KEYS.notificationsEnabled,
     STORAGE_KEYS.contacts,
-    STORAGE_KEYS.messengerProfile,
   ]);
 
   const values = Object.fromEntries(entries);
@@ -33,7 +31,6 @@ export async function loadAppState(): Promise<AppState> {
       DEFAULT_APP_STATE.notificationsEnabled
     ),
     contacts: parseJson(values[STORAGE_KEYS.contacts], DEFAULT_APP_STATE.contacts),
-    messengerProfile: parseJson(values[STORAGE_KEYS.messengerProfile], DEFAULT_APP_STATE.messengerProfile),
   };
 }
 
@@ -62,10 +59,6 @@ export async function saveContacts(value: AppState['contacts']) {
   await AsyncStorage.setItem(STORAGE_KEYS.contacts, JSON.stringify(value));
 }
 
-export async function saveMessengerProfile(value: AppState['messengerProfile']) {
-  await AsyncStorage.setItem(STORAGE_KEYS.messengerProfile, JSON.stringify(value));
-}
-
 export async function resetAppStateStorage() {
   await AsyncStorage.multiRemove([
     STORAGE_KEYS.lastCheckInAt,
@@ -73,7 +66,6 @@ export async function resetAppStateStorage() {
     STORAGE_KEYS.intervalHours,
     STORAGE_KEYS.notificationsEnabled,
     STORAGE_KEYS.contacts,
-    STORAGE_KEYS.messengerProfile,
   ]);
 }
 

@@ -21,6 +21,7 @@ export function HomeScreen({ navigation }: Props) {
   const [now, setNow] = useState(Date.now());
   const [pickerMode, setPickerMode] = useState<PickerMode>(null);
   const [checkInNotice, setCheckInNotice] = useState('');
+  const intervalMs = intervalHours * 60 * 60 * 1000;
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -40,14 +41,14 @@ export function HomeScreen({ navigation }: Props) {
   }, [checkInNotice]);
 
   const deadlineAt = lastCheckInAt
-    ? new Date(lastCheckInAt).getTime() + intervalHours * 60 * 60 * 1000
+    ? new Date(lastCheckInAt).getTime() + intervalMs
     : null;
-  const remainingMs = deadlineAt ? deadlineAt - now : intervalHours * 60 * 60 * 1000;
+  const remainingMs = deadlineAt ? deadlineAt - now : intervalMs;
   const isOverdue = deadlineAt ? remainingMs <= 0 : false;
 
   const handleCheckIn = async () => {
     await recordCheckIn();
-    const nextRemainingMs = intervalHours * 60 * 60 * 1000;
+    const nextRemainingMs = intervalMs;
 
     setCheckInNotice(
       formatRemainingTime(
@@ -140,18 +141,11 @@ export function HomeScreen({ navigation }: Props) {
 
       <View style={styles.actionPanel}>
         <Text style={styles.panelLabel}>Quick Actions</Text>
-        <View style={styles.actionRow}>
-          <View style={styles.actionCell}>
-            <AppButton label="Messenger" onPress={() => navigation.navigate('Messenger')} variant="secondary" />
-          </View>
-          <View style={styles.actionCell}>
-            <AppButton
-              label={t('home.contactsButton')}
-              onPress={() => navigation.navigate('EmergencyContacts')}
-              variant="secondary"
-            />
-          </View>
-        </View>
+        <AppButton
+          label={t('home.contactsButton')}
+          onPress={() => navigation.navigate('EmergencyContacts')}
+          variant="secondary"
+        />
       </View>
 
       <AppButton label={t('home.settingsButton')} onPress={() => navigation.navigate('Settings')} variant="secondary" />
@@ -297,13 +291,6 @@ const styles = StyleSheet.create({
     color: '#648075',
     marginBottom: 2,
   },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  actionCell: {
-    flex: 1,
-  }
 });
 
 function formatClockCountdown(remainingMs: number) {
