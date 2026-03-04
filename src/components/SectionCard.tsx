@@ -1,19 +1,36 @@
 import { StyleSheet, View } from 'react-native';
 
-export function SectionCard({ children }: { children: React.ReactNode }) {
-  return <View style={styles.card}>{children}</View>;
+type Props = {
+  children: React.ReactNode;
+  variant?: 'default' | 'hero' | 'warning';
+};
+
+export function SectionCard({ children, variant = 'default' }: Props) {
+  return <View style={[styles.card, styles[variant]]}>{children}</View>;
 }
 
 const styles = StyleSheet.create({
   card: {
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    shadowColor: '#153128',
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 3,
+  },
+  default: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 14,
-    shadowColor: '#0F241D',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
+    borderColor: '#E0EBE4',
+  },
+  hero: {
+    backgroundColor: '#F4FAF6',
+    borderColor: '#D5E6DB',
+  },
+  warning: {
+    backgroundColor: '#FFF8F7',
+    borderColor: '#F2D8D8',
   },
 });

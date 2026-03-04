@@ -3,6 +3,8 @@ import { Platform } from 'react-native';
 
 import { ANDROID_NOTIFICATION_CHANNEL_ID } from '../config/appConfig';
 import en from '../locales/en.json';
+import es from '../locales/es.json';
+import ja from '../locales/ja.json';
 import ko from '../locales/ko.json';
 import type { Locale } from './types';
 
@@ -13,7 +15,7 @@ type ScheduleArgs = {
   locale: Locale;
 };
 
-const dictionaries = { en, ko } as const;
+const dictionaries = { en, es, ja, ko } as const;
 const isExpoGo = Constants.executionEnvironment === 'storeClient';
 
 export function notificationsSupported() {

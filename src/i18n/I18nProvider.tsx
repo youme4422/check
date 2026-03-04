@@ -1,12 +1,16 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
 import en from '../locales/en.json';
+import es from '../locales/es.json';
+import ja from '../locales/ja.json';
 import ko from '../locales/ko.json';
 import { loadLocale, saveLocale } from '../storage/storage';
 import type { Locale } from '../storage/types';
 
 const dictionaries = {
   en,
+  es,
+  ja,
   ko,
 } as const;
 

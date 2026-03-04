@@ -66,6 +66,7 @@
       "reactCompiler": true
     },
     "extra": {
+      "apiBaseUrl": "http://192.168.35.213:4000",
       "eas": {
         "projectId": "fa86ed90-4ef6-4ceb-900f-b2cf74eeb70c"
       }

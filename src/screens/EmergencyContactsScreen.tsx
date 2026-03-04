@@ -93,6 +93,7 @@ export function EmergencyContactsScreen() {
   return (
     <ScreenContainer>
       <SectionCard>
+        <Text style={styles.eyebrow}>{t('contacts.title')}</Text>
         <Text style={styles.sectionTitle}>
           {form.id ? t('contacts.editSectionTitle') : t('contacts.addSectionTitle')}
         </Text>
@@ -136,6 +137,7 @@ export function EmergencyContactsScreen() {
       </SectionCard>
 
       <SectionCard>
+        <Text style={styles.eyebrow}>{t('contacts.title')}</Text>
         <Text style={styles.sectionTitle}>{t('contacts.savedContactsTitle')}</Text>
 
         {contacts.length === 0 ? <Text style={styles.empty}>{t('contacts.empty')}</Text> : null}
@@ -207,51 +209,64 @@ function validate(form: FormState, t: (key: string) => string) {
 }
 
 const styles = StyleSheet.create({
-  sectionTitle: {
-    fontSize: 20,
+  eyebrow: {
+    fontSize: 12,
     fontWeight: '800',
-    color: '#1C3B31',
-    marginBottom: 8,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: '#5E7A6E',
+    marginBottom: 6,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#17362C',
+    marginBottom: 10,
   },
   label: {
     marginTop: 12,
     marginBottom: 6,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#496158',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+    color: '#5D756B',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#C8D5CD',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: '#F9FCFA',
-    color: '#1C3B31',
+    borderColor: '#D6E2DB',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#F7FBF8',
+    color: '#17362C',
   },
   empty: {
     marginTop: 6,
-    color: '#607067',
+    color: '#66766E',
     lineHeight: 22,
   },
   contactCard: {
     marginTop: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#D8E2DC',
-    paddingTop: 14,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E1E9E4',
+    backgroundColor: '#FAFCFB',
+    padding: 14,
   },
   contactName: {
     fontSize: 17,
-    fontWeight: '700',
-    color: '#1C3B31',
+    fontWeight: '800',
+    color: '#17362C',
   },
   contactMeta: {
     marginTop: 4,
-    color: '#607067',
+    color: '#66766E',
   },
   buttonRow: {
     flexDirection: 'row',
     gap: 10,
+    marginTop: 2,
   },
   buttonCell: {
     flex: 1,

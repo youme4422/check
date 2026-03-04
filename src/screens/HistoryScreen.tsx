@@ -27,6 +27,7 @@ export function HistoryScreen() {
   return (
     <ScreenContainer>
       <SectionCard>
+        <Text style={styles.eyebrow}>{t('common.appName')}</Text>
         <Text style={styles.title}>{t('history.title')}</Text>
         <Text style={styles.helper}>{t('history.helper')}</Text>
 
@@ -45,27 +46,37 @@ export function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: 20,
+  eyebrow: {
+    fontSize: 12,
     fontWeight: '800',
-    color: '#1C3B31',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: '#5E7A6E',
+    marginBottom: 6,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#17362C',
   },
   helper: {
-    marginTop: 6,
-    color: '#607067',
+    marginTop: 8,
+    color: '#66766E',
     lineHeight: 22,
   },
   empty: {
     marginTop: 14,
-    color: '#607067',
+    color: '#66766E',
   },
   item: {
     marginTop: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    backgroundColor: '#F9FCFA',
-    color: '#1C3B31',
-    fontWeight: '600',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    backgroundColor: '#F7FBF8',
+    borderWidth: 1,
+    borderColor: '#DCE7E0',
+    color: '#17362C',
+    fontWeight: '700',
   },
 });

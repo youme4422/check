@@ -1,4 +1,4 @@
-import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useEffect, useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -6,7 +6,7 @@ import { AppButton } from '../components/AppButton';
 import { ContactPickerModal } from '../components/ContactPickerModal';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { SectionCard } from '../components/SectionCard';
-import { formatDateTime, formatRemainingTime } from '../i18n/formatters';
+import { formatRemainingTime } from '../i18n/formatters';
 import { useI18n } from '../i18n/I18nProvider';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useAppState } from '../storage/AppStateContext';
@@ -16,15 +16,28 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 type PickerMode = 'sms' | 'email' | null;
 
 export function HomeScreen({ navigation }: Props) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const { lastCheckInAt, intervalHours, contacts, recordCheckIn } = useAppState();
   const [now, setNow] = useState(Date.now());
   const [pickerMode, setPickerMode] = useState<PickerMode>(null);
+  const [checkInNotice, setCheckInNotice] = useState('');
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!checkInNotice) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setCheckInNotice('');
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [checkInNotice]);
 
   const deadlineAt = lastCheckInAt
     ? new Date(lastCheckInAt).getTime() + intervalHours * 60 * 60 * 1000
@@ -34,7 +47,19 @@ export function HomeScreen({ navigation }: Props) {
 
   const handleCheckIn = async () => {
     await recordCheckIn();
-    Alert.alert(t('home.checkInSuccessTitle'), t('home.checkInSuccessBody'));
+    const nextRemainingMs = intervalHours * 60 * 60 * 1000;
+
+    setCheckInNotice(
+      formatRemainingTime(
+        nextRemainingMs,
+        {
+          day: t('time.day'),
+          hour: t('time.hour'),
+          minute: t('time.minute')
+        },
+        t('time.ready')
+      )
+    );
   };
 
   const handleQuickAction = (mode: Exclude<PickerMode, null>) => {
@@ -80,8 +105,16 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <ScreenContainer>
+      {checkInNotice ? (
+        <View style={styles.noticeCard}>
+          <Text style={styles.noticeTitle}>{t('home.checkInSuccessTitle')}</Text>
+          <Text style={styles.noticeBody}>{checkInNotice}</Text>
+        </View>
+      ) : null}
+
       {isOverdue ? (
-        <SectionCard>
+        <SectionCard variant="warning">
+          <Text style={styles.alertPill}>Attention Needed</Text>
           <Text style={styles.bannerTitle}>{t('home.missedTitle')}</Text>
           <Text style={styles.bannerBody}>{t('home.missedBody')}</Text>
           <AppButton label={t('home.sendSms')} onPress={() => handleQuickAction('sms')} />
@@ -89,46 +122,35 @@ export function HomeScreen({ navigation }: Props) {
         </SectionCard>
       ) : null}
 
-      <SectionCard>
+      <SectionCard variant="hero">
+        <Text style={styles.eyebrow}>{t('common.appName')}</Text>
         <Text style={styles.heroTitle}>{t('home.checkInButton')}</Text>
         <Text style={styles.heroBody}>{t('home.heroDescription')}</Text>
-        <AppButton label={t('home.checkInButton')} onPress={handleCheckIn} />
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            void handleCheckIn();
+          }}
+          style={({ pressed }) => [styles.checkInButton, pressed ? styles.checkInButtonPressed : null]}
+        >
+          <Text style={styles.checkInTime}>{formatClockCountdown(remainingMs)}</Text>
+          <Text style={styles.checkInHint}>{t('home.checkInButton')}</Text>
+        </Pressable>
       </SectionCard>
 
-      <SectionCard>
-        <Text style={styles.label}>{t('home.lastCheckInLabel')}</Text>
-        <Text style={styles.value}>
-          {lastCheckInAt ? formatDateTime(lastCheckInAt, locale) : t('home.noCheckInYet')}
-        </Text>
-      </SectionCard>
-
-      <SectionCard>
-        <Text style={styles.label}>{t('home.nextCheckInLabel')}</Text>
-        <Text style={styles.value}>
-          {t('home.remainingTemplate', {
-            time: formatRemainingTime(
-              remainingMs,
-              {
-                day: t('time.day'),
-                hour: t('time.hour'),
-                minute: t('time.minute')
-              },
-              t('time.ready')
-            )
-          })}
-        </Text>
-      </SectionCard>
-
-      <View style={styles.row}>
-        <View style={styles.half}>
-          <AppButton label={t('home.historyButton')} onPress={() => navigation.navigate('History')} variant="secondary" />
-        </View>
-        <View style={styles.half}>
-          <AppButton
-            label={t('home.contactsButton')}
-            onPress={() => navigation.navigate('EmergencyContacts')}
-            variant="secondary"
-          />
+      <View style={styles.actionPanel}>
+        <Text style={styles.panelLabel}>Quick Actions</Text>
+        <View style={styles.actionRow}>
+          <View style={styles.actionCell}>
+            <AppButton label="Messenger" onPress={() => navigation.navigate('Messenger')} variant="secondary" />
+          </View>
+          <View style={styles.actionCell}>
+            <AppButton
+              label={t('home.contactsButton')}
+              onPress={() => navigation.navigate('EmergencyContacts')}
+              variant="secondary"
+            />
+          </View>
         </View>
       </View>
 
@@ -154,43 +176,144 @@ export function HomeScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
+  noticeCard: {
+    marginBottom: 12,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#F5FBF7',
+    borderWidth: 1,
+    borderColor: '#D4E7DB',
+    shadowColor: '#153128',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 2,
+  },
+  noticeTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#196B57',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  noticeBody: {
+    marginTop: 6,
+    color: '#29453B',
+    lineHeight: 22,
+    fontWeight: '600',
+  },
+  eyebrow: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: '#1A7F64'
+  },
+  alertPill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#FBE9E8',
+    color: '#8C2F39',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase'
+  },
   bannerTitle: {
-    fontSize: 20,
+    marginTop: 10,
+    fontSize: 21,
     fontWeight: '800',
     color: '#8C2F39'
   },
   bannerBody: {
-    color: '#5E3137',
+    color: '#694148',
     marginTop: 8,
     lineHeight: 22
   },
   heroTitle: {
-    fontSize: 24,
+    marginTop: 6,
+    fontSize: 28,
     fontWeight: '800',
-    color: '#1C3B31'
+    color: '#17362C',
+    letterSpacing: -0.4
   },
   heroBody: {
-    marginTop: 8,
-    color: '#5C6D64',
-    lineHeight: 22
+    marginTop: 10,
+    color: '#5A6B62',
+    lineHeight: 23
   },
-  label: {
+  checkInButton: {
+    marginTop: 18,
+    minHeight: 138,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1A6856',
+    borderWidth: 1,
+    borderColor: '#145847',
+    shadowColor: '#114136',
+    shadowOpacity: 0.2,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5,
+    paddingHorizontal: 22,
+  },
+  checkInButtonPressed: {
+    opacity: 0.94,
+    transform: [{ scale: 0.99 }],
+  },
+  checkInTime: {
+    color: '#FFFFFF',
+    fontSize: 40,
+    fontWeight: '800',
+    letterSpacing: 1.4,
+    fontVariant: ['tabular-nums'],
+  },
+  checkInHint: {
+    marginTop: 10,
+    color: '#DDEEE8',
     fontSize: 14,
-    fontWeight: '600',
-    color: '#5C6D64'
-  },
-  value: {
-    marginTop: 8,
-    fontSize: 20,
     fontWeight: '700',
-    color: '#1C3B31',
-    lineHeight: 28
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
-  row: {
+  actionPanel: {
+    marginTop: 2,
+    marginBottom: 2,
+    borderRadius: 20,
+    padding: 14,
+    backgroundColor: '#F6FAF7',
+    borderWidth: 1,
+    borderColor: '#DCE7E0',
+  },
+  panelLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.9,
+    textTransform: 'uppercase',
+    color: '#648075',
+    marginBottom: 2,
+  },
+  actionRow: {
     flexDirection: 'row',
-    gap: 10
+    gap: 10,
   },
-  half: {
-    flex: 1
+  actionCell: {
+    flex: 1,
   }
 });
+
+function formatClockCountdown(remainingMs: number) {
+  const safeMs = Math.max(0, remainingMs);
+  const totalSeconds = Math.floor(safeMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return [hours, minutes, seconds]
+    .map((value) => String(value).padStart(2, '0'))
+    .join(':');
+}
