@@ -38,6 +38,7 @@ export function SettingsScreen({ navigation }: Props) {
   } = useAppState();
   const [exportJson, setExportJson] = useState('');
   const supportsNotifications = notificationsSupported();
+  const privacyHelperText = t('settings.privacyHelper');
 
   const handleToggleNotifications = async (value: boolean) => {
     if (value && !supportsNotifications) {
@@ -204,7 +205,7 @@ export function SettingsScreen({ navigation }: Props) {
       <SectionCard>
         <Text style={styles.eyebrow}>{t('settings.title')}</Text>
         <Text style={styles.sectionTitle}>{t('settings.privacyTitle')}</Text>
-        <Text style={styles.helper}>{t('settings.privacyHelper')}</Text>
+        {privacyHelperText ? <Text style={styles.helper}>{privacyHelperText}</Text> : null}
         <AppButton label={t('settings.privacyButton')} onPress={() => void handleOpenPrivacyPolicy()} variant="secondary" />
       </SectionCard>
 

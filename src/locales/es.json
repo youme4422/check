@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Check In Safe",
+    "appName": "TaeB",
     "cancel": "Cancelar",
     "close": "Cerrar",
     "delete": "Eliminar"
@@ -12,8 +12,8 @@
     "ready": "Se necesita un check-in ahora"
   },
   "messages": {
-    "emergencySubject": "Alerta de check-in no completado de Check In Safe",
-    "emergencyBody": "Hola. En la app Check In Safe, mi check-in de seguridad no se completó dentro del tiempo programado. Por favor, intenta comunicarte conmigo."
+    "emergencySubject": "Alerta de check-in no completado de TaeB",
+    "emergencyBody": "Hola. En la app TaeB, mi check-in de seguridad no se completó dentro del tiempo programado. Por favor, intenta comunicarte conmigo."
   },
   "notifications": {
     "channelName": "recordatorios de check-in",
@@ -22,8 +22,7 @@
     "deadlineTitle": "Tu hora de check-in ha pasado",
     "deadlineBody": "Abre la app y registra tu check-in ahora."
   },
-  "home": {
-    "checkInButton": "Hacer check-in hoy",
+  "home": {    "checkInButton": "Hacer check-in hoy",
     "heroDescription": "Deja una señal rápida de que hoy estás bien.",
     "checkInSuccessTitle": "Check-in completado",
     "checkInSuccessBody": "Tu próximo horario de check-in ha sido actualizado.",
@@ -94,7 +93,7 @@
     "languageJa": "日本語",
     "languageEs": "Español",
     "privacyTitle": "Política de privacidad",
-    "privacyHelper": "Antes de enviar a Play Store, conecta una política de privacidad publicada en una URL HTTPS.",
+    "privacyHelper": "",
     "privacyButton": "Abrir política de privacidad",
     "privacyErrorTitle": "No se puede abrir el enlace de la política",
     "privacyErrorBody": "Configura una URL HTTPS válida para la política de privacidad e inténtalo de nuevo.",

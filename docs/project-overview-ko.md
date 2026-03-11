@@ -1,6 +1,6 @@
 # 프로젝트 정리 메모
 
-현재 작업 대상은 `Check In Safe` 앱의 Google Play 제출 준비본입니다.
+현재 작업 대상은 `TaeB` 앱의 Google Play 제출 준비본입니다.
 
 ## 핵심 설정 파일
 

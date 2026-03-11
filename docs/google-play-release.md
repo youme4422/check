@@ -5,13 +5,13 @@ This project is a personal safety check-in app. Store assets, descriptions, app 
 ## Store listing
 
 App name:
-Check In Safe
+TaeB
 
 Short description:
 Record a daily safety check-in and reach emergency contacts quickly.
 
 Full description:
-Check In Safe helps you leave a simple daily safety signal and keep track of the next required check-in.
+TaeB helps you leave a simple daily safety signal and keep track of the next required check-in.
 
 Core functions:
 - record a check-in in one tap
@@ -43,6 +43,12 @@ Before submission:
 Current configured policy URL:
 - `https://sites.google.com/view/younmecheck/%ED%99%88`
 
+Current app networking status:
+- No app-owned backend API calls in the current client implementation.
+
+Before release:
+1. Make sure the privacy policy text matches the current local-only/manual-action behavior.
+
 ## Android build
 
 Package name:
@@ -53,7 +59,7 @@ Build commands:
 - `npm run submit:android`
 
 Latest validated AAB:
-- `versionCode 5`
+- `versionCode 9` build started on EAS (`ff814532-ace8-4c3f-8f9f-c2cd1dff8212`)
 - `allowBackup=false`
 - `fullBackupContent=false`
 - blocked permissions verified removed:
@@ -68,6 +74,7 @@ Latest AAB download:
 ## Final pre-submit check
 
 1. Replace generated screenshots with real device screenshots if possible.
-2. Verify the app name shown in the binary matches "Check In Safe".
-3. Review the Data safety form in Play Console based on your actual data handling.
-4. Make sure the privacy policy URL is live and publicly viewable before review submission.
+2. Verify the app name shown in the binary matches "TaeB".
+3. Verify Data safety form answers match the local-only data flow.
+4. Review the Data safety form in Play Console based on your actual data handling.
+5. Make sure the privacy policy URL is live and publicly viewable before review submission.

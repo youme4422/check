@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Check In Safe",
+    "appName": "TaeB",
     "cancel": "キャンセル",
     "close": "閉じる",
     "delete": "削除"
@@ -12,8 +12,8 @@
     "ready": "今すぐチェックインが必要です"
   },
   "messages": {
-    "emergencySubject": "Check In Safe チェックイン未完了のお知らせ",
-    "emergencyBody": "こんにちは。Check In Safe アプリで予定時刻までに安全チェックインが完了していません。可能であれば連絡してください。"
+    "emergencySubject": "TaeB チェックイン未完了のお知らせ",
+    "emergencyBody": "こんにちは。TaeB アプリで予定時刻までに安全チェックインが完了していません。可能であれば連絡してください。"
   },
   "notifications": {
     "channelName": "チェックイン通知",
@@ -22,8 +22,7 @@
     "deadlineTitle": "チェックイン時間を過ぎました",
     "deadlineBody": "アプリを開いて今すぐチェックインを記録してください。"
   },
-  "home": {
-    "checkInButton": "今日のチェックイン",
+  "home": {    "checkInButton": "今日のチェックイン",
     "heroDescription": "今日も無事だというサインをすばやく残しましょう。",
     "checkInSuccessTitle": "チェックインが完了しました",
     "checkInSuccessBody": "次のチェックイン予定が更新されました。",
@@ -94,7 +93,7 @@
     "languageJa": "日本語",
     "languageEs": "Español",
     "privacyTitle": "プライバシーポリシー",
-    "privacyHelper": "Play Store 申請前に、HTTPS で公開されたプライバシーポリシーを接続してください。",
+    "privacyHelper": "",
     "privacyButton": "プライバシーポリシーを開く",
     "privacyErrorTitle": "ポリシーのリンクを開けません",
     "privacyErrorBody": "有効な HTTPS のポリシーURLを設定して、もう一度お試しください。",

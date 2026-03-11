@@ -50,8 +50,8 @@ GitHub Pages 배포가 완료되면 아래 주소로 접속합니다.
 
 예:
 
-- 저장소 이름이 `check-in-safe` 이면
-- `https://younme0404.github.io/check-in-safe/privacy-policy.html`
+- 저장소 이름이 `taeb` 이면
+- `https://younme0404.github.io/taeb/privacy-policy.html`
 
 ## 5. Play 제출 전 최종 점검
 

@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Check In Safe",
+    "appName": "TaeB",
     "cancel": "Cancel",
     "close": "Close",
     "delete": "Delete"
@@ -12,8 +12,8 @@
     "ready": "A check-in is needed now"
   },
   "messages": {
-    "emergencySubject": "Check In Safe missed check-in alert",
-    "emergencyBody": "Hello. In the Check In Safe app, my safety check-in was not completed within the scheduled time. Please try contacting me."
+    "emergencySubject": "TaeB missed check-in alert",
+    "emergencyBody": "Hello. In the TaeB app, my safety check-in was not completed within the scheduled time. Please try contacting me."
   },
   "notifications": {
     "channelName": "check-in reminders",
@@ -94,7 +94,7 @@
     "languageJa": "Japanese",
     "languageEs": "Spanish",
     "privacyTitle": "Privacy policy",
-    "privacyHelper": "Before Play Store submission, connect a privacy policy hosted at an HTTPS URL.",
+    "privacyHelper": "",
     "privacyButton": "Open privacy policy",
     "privacyErrorTitle": "Unable to open the policy link",
     "privacyErrorBody": "Set a valid HTTPS privacy policy URL and try again.",

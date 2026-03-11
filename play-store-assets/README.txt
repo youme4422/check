@@ -1,10 +1,15 @@
-﻿Generated files:
-- play-icon-512.png
-- feature-graphic-1024x500.png
-- phone-screenshot-01.png
-- phone-screenshot-02.png
+﻿Generated Google Play screenshots:
+- phone-screenshot-01-welcome.png
+- phone-screenshot-02-home.png
+- phone-screenshot-03-checkin-success.png
+- phone-screenshot-04-history.png
+- phone-screenshot-05-emergency-contacts.png
+- phone-screenshot-06-reminder-notification.png
+- phone-screenshot-07-deadline-warning.png
+- phone-screenshot-08-settings.png
 
-Notes:
-- These assets are aligned to the current app's check-in safety workflow.
-- Replace generated screenshots with device captures before final submission if possible.
-- Prepare a hosted HTTPS privacy policy URL before uploading to Play Console.
+Specs:
+- 1080 x 1920
+- PNG
+- Portrait 9:16
+- Based on the current Taeb app flow

@@ -4,7 +4,7 @@ Use this as the base document for the HTTPS privacy policy page required by Goog
 
 ## App
 
-Check In Safe
+TaeB
 
 ## Data handled
 

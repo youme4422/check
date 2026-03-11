@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Check In Safe",
-    "slug": "check-in-safe",
+    "name": "TaeB",
+    "slug": "taeb",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "checkinsafe",
+    "scheme": "taeb",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "runtimeVersion": {
@@ -18,7 +18,6 @@
     },
     "android": {
       "package": "com.jan26.checkinsafe",
-      "versionCode": 1,
       "permissions": [
         "android.permission.POST_NOTIFICATIONS"
       ],
@@ -27,7 +26,11 @@
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.VIBRATE"
+        "android.permission.VIBRATE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.ACCESS_MEDIA_LOCATION"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -48,7 +51,7 @@
         {
           "icon": "./assets/images/android-icon-monochrome.png",
           "color": "#1A7F64",
-          "defaultChannel": "checkin-safe-reminders"
+          "defaultChannel": "taeb-reminders"
         }
       ],
       [

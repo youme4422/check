@@ -1,10 +1,10 @@
 # 연습 배포 안내
 
-이 폴더는 `Check In Safe` 앱을 다른 사람에게 시연하거나 전달할 때 참고할 수 있도록 정리한 배포 묶음입니다.
+이 폴더는 `TaeB` 앱을 다른 사람에게 시연하거나 전달할 때 참고할 수 있도록 정리한 배포 묶음입니다.
 
 ## 포함 항목
 
-- `check-in-safe-demo.aab`: 최신 Android App Bundle
+- `taeb-demo.aab`: 최신 Android App Bundle
 - `privacy-policy-ko.md`: 한글 개인정보처리방침
 - `google-play-release.md`: 현재 Play 제출 기준 정리
 
