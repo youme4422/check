@@ -22,7 +22,8 @@
     "deadlineTitle": "Tu hora de check-in ha pasado",
     "deadlineBody": "Abre la app y registra tu check-in ahora."
   },
-  "home": {    "checkInButton": "Hacer check-in hoy",
+  "home": {
+    "checkInButton": "Hacer check-in hoy",
     "heroDescription": "Deja una señal rápida de que hoy estás bien.",
     "checkInSuccessTitle": "Check-in completado",
     "checkInSuccessBody": "Tu próximo horario de check-in ha sido actualizado.",
@@ -110,7 +111,8 @@
     "resetConfirmTitle": "¿Restablecer todos los datos?",
     "resetConfirmBody": "Se eliminarán todos los historiales de check-in y contactos guardados.",
     "permissionTitle": "Se requiere permiso de notificaciones",
-    "permissionBody": "Permite el permiso de notificaciones en la configuración del dispositivo e inténtalo de nuevo."
+    "permissionBody": "Permite el permiso de notificaciones en la configuración del dispositivo e inténtalo de nuevo.",
+    "languageZh": "中文"
   },
   "history": {
     "title": "Historial de check-in",

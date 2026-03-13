@@ -6,17 +6,21 @@ import { AppButton } from '../components/AppButton';
 import { ContactPickerModal } from '../components/ContactPickerModal';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { SectionCard } from '../components/SectionCard';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { formatRemainingTime } from '../i18n/formatters';
 import { useI18n } from '../i18n/I18nProvider';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useAppState } from '../storage/AppStateContext';
 import type { Contact } from '../storage/types';
+import { useAppTheme } from '../theme/ThemeProvider';
+import { isAllowedExternalUrl } from '../utils/urlSafety';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 type PickerMode = 'sms' | 'email' | null;
 
 export function HomeScreen({ navigation }: Props) {
   const { t } = useI18n();
+  const { theme, scheme } = useAppTheme();
   const { lastCheckInAt, intervalHours, contacts, recordCheckIn } = useAppState();
   const [now, setNow] = useState(Date.now());
   const [pickerMode, setPickerMode] = useState<PickerMode>(null);
@@ -97,7 +101,19 @@ export function HomeScreen({ navigation }: Props) {
   };
 
   const openUrl = async (url: string) => {
+    if (!isAllowedExternalUrl(url, ['sms:', 'mailto:'])) {
+      Alert.alert(t('home.composerErrorTitle'), t('home.composerErrorBody'));
+      return;
+    }
+
     try {
+      const supported = await Linking.canOpenURL(url);
+
+      if (!supported) {
+        Alert.alert(t('home.composerErrorTitle'), t('home.composerErrorBody'));
+        return;
+      }
+
       await Linking.openURL(url);
     } catch {
       Alert.alert(t('home.composerErrorTitle'), t('home.composerErrorBody'));
@@ -107,40 +123,62 @@ export function HomeScreen({ navigation }: Props) {
   return (
     <ScreenContainer>
       {checkInNotice ? (
-        <View style={styles.noticeCard}>
-          <Text style={styles.noticeTitle}>{t('home.checkInSuccessTitle')}</Text>
-          <Text style={styles.noticeBody}>{checkInNotice}</Text>
+        <View
+          style={[
+            styles.noticeCard,
+            {
+              backgroundColor: scheme === 'dark' ? '#11211E' : '#F5FBF7',
+              borderColor: theme.border,
+              shadowColor: '#000000',
+            },
+          ]}
+        >
+          <Text style={[styles.noticeTitle, { color: theme.primary }]}>{t('home.checkInSuccessTitle')}</Text>
+          <Text style={[styles.noticeBody, { color: theme.text }]}>{checkInNotice}</Text>
         </View>
       ) : null}
 
       {isOverdue ? (
         <SectionCard variant="warning">
-          <Text style={styles.alertPill}>Attention Needed</Text>
-          <Text style={styles.bannerTitle}>{t('home.missedTitle')}</Text>
-          <Text style={styles.bannerBody}>{t('home.missedBody')}</Text>
+          <Text style={[styles.alertPill, { backgroundColor: scheme === 'dark' ? '#352524' : '#FBE9E8', color: theme.warningText }]}>Attention Needed</Text>
+          <Text style={[styles.bannerTitle, { color: theme.warningText }]}>{t('home.missedTitle')}</Text>
+          <Text style={[styles.bannerBody, { color: theme.mutedText }]}>{t('home.missedBody')}</Text>
           <AppButton label={t('home.sendSms')} onPress={() => handleQuickAction('sms')} />
           <AppButton label={t('home.sendEmail')} onPress={() => handleQuickAction('email')} variant="secondary" />
         </SectionCard>
       ) : null}
 
       <SectionCard variant="hero">
-        <Text style={styles.eyebrow}>{t('common.appName')}</Text>
-        <Text style={styles.heroTitle}>{t('home.checkInButton')}</Text>
-        <Text style={styles.heroBody}>{t('home.heroDescription')}</Text>
+        <View style={styles.heroHeader}>
+          <View style={styles.heroHeaderText}>
+            <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('common.appName')}</Text>
+            <Text style={[styles.heroTitle, { color: theme.text }]}>{t('home.checkInButton')}</Text>
+          </View>
+          <ThemeToggle />
+        </View>
+        <Text style={[styles.heroBody, { color: theme.mutedText }]}>{t('home.heroDescription')}</Text>
         <Pressable
           accessibilityRole="button"
           onPress={() => {
             void handleCheckIn();
           }}
-          style={({ pressed }) => [styles.checkInButton, pressed ? styles.checkInButtonPressed : null]}
+          style={({ pressed }) => [
+            styles.checkInButton,
+            {
+              backgroundColor: theme.primary,
+              borderColor: theme.secondary,
+              shadowColor: '#000000',
+            },
+            pressed ? styles.checkInButtonPressed : null,
+          ]}
         >
           <Text style={styles.checkInTime}>{formatClockCountdown(remainingMs)}</Text>
           <Text style={styles.checkInHint}>{t('home.checkInButton')}</Text>
         </Pressable>
       </SectionCard>
 
-      <View style={styles.actionPanel}>
-        <Text style={styles.panelLabel}>Quick Actions</Text>
+      <View style={[styles.actionPanel, { backgroundColor: theme.softSurface, borderColor: theme.border }]}>
+        <Text style={[styles.panelLabel, { color: theme.mutedText }]}>Quick Actions</Text>
         <AppButton
           label={t('home.contactsButton')}
           onPress={() => navigation.navigate('EmergencyContacts')}
@@ -228,11 +266,20 @@ const styles = StyleSheet.create({
     lineHeight: 22
   },
   heroTitle: {
-    marginTop: 6,
     fontSize: 28,
     fontWeight: '800',
     color: '#17362C',
     letterSpacing: -0.4
+  },
+  heroHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  heroHeaderText: {
+    flex: 1,
+    paddingRight: 4,
   },
   heroBody: {
     marginTop: 10,

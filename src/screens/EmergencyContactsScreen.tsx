@@ -7,6 +7,8 @@ import { SectionCard } from '../components/SectionCard';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppState } from '../storage/AppStateContext';
 import type { Contact } from '../storage/types';
+import { useAppTheme } from '../theme/ThemeProvider';
+import { isAllowedExternalUrl } from '../utils/urlSafety';
 
 type FormState = {
   id: string | null;
@@ -24,6 +26,7 @@ const EMPTY_FORM: FormState = {
 
 export function EmergencyContactsScreen() {
   const { t } = useI18n();
+  const { theme } = useAppTheme();
   const { contacts, upsertContact, removeContact } = useAppState();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
 
@@ -75,7 +78,13 @@ export function EmergencyContactsScreen() {
           return;
         }
 
-        await Linking.openURL(`sms:${contact.phone}?body=${body}`);
+        const smsUrl = `sms:${contact.phone}?body=${body}`;
+        if (!isAllowedExternalUrl(smsUrl, ['sms:']) || !(await Linking.canOpenURL(smsUrl))) {
+          Alert.alert(t('home.composerErrorTitle'), t('home.composerErrorBody'));
+          return;
+        }
+
+        await Linking.openURL(smsUrl);
         return;
       }
 
@@ -84,7 +93,13 @@ export function EmergencyContactsScreen() {
         return;
       }
 
-      await Linking.openURL(`mailto:${contact.email}?subject=${subject}&body=${body}`);
+      const emailUrl = `mailto:${contact.email}?subject=${subject}&body=${body}`;
+      if (!isAllowedExternalUrl(emailUrl, ['mailto:']) || !(await Linking.canOpenURL(emailUrl))) {
+        Alert.alert(t('home.composerErrorTitle'), t('home.composerErrorBody'));
+        return;
+      }
+
+      await Linking.openURL(emailUrl);
     } catch {
       Alert.alert(t('home.composerErrorTitle'), t('home.composerErrorBody'));
     }
@@ -93,37 +108,37 @@ export function EmergencyContactsScreen() {
   return (
     <ScreenContainer>
       <SectionCard>
-        <Text style={styles.eyebrow}>{t('contacts.title')}</Text>
-        <Text style={styles.sectionTitle}>
+        <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('contacts.title')}</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>
           {form.id ? t('contacts.editSectionTitle') : t('contacts.addSectionTitle')}
         </Text>
 
-        <Text style={styles.label}>{t('contacts.nameLabel')}</Text>
+        <Text style={[styles.label, { color: theme.mutedText }]}>{t('contacts.nameLabel')}</Text>
         <TextInput
           value={form.name}
           onChangeText={(value) => setForm((current) => ({ ...current, name: value }))}
           placeholder={t('contacts.namePlaceholder')}
-          style={styles.input}
+          style={[styles.input, { borderColor: theme.border, backgroundColor: theme.input, color: theme.text }]}
           placeholderTextColor="#8A9A92"
         />
 
-        <Text style={styles.label}>{t('contacts.phoneLabel')}</Text>
+        <Text style={[styles.label, { color: theme.mutedText }]}>{t('contacts.phoneLabel')}</Text>
         <TextInput
           value={form.phone}
           onChangeText={(value) => setForm((current) => ({ ...current, phone: value }))}
           placeholder={t('contacts.phonePlaceholder')}
-          style={styles.input}
+          style={[styles.input, { borderColor: theme.border, backgroundColor: theme.input, color: theme.text }]}
           keyboardType="phone-pad"
           inputMode="tel"
           placeholderTextColor="#8A9A92"
         />
 
-        <Text style={styles.label}>{t('contacts.emailLabel')}</Text>
+        <Text style={[styles.label, { color: theme.mutedText }]}>{t('contacts.emailLabel')}</Text>
         <TextInput
           value={form.email}
           onChangeText={(value) => setForm((current) => ({ ...current, email: value }))}
           placeholder={t('contacts.emailPlaceholder')}
-          style={styles.input}
+          style={[styles.input, { borderColor: theme.border, backgroundColor: theme.input, color: theme.text }]}
           keyboardType="email-address"
           autoCapitalize="none"
           inputMode="email"
@@ -137,16 +152,19 @@ export function EmergencyContactsScreen() {
       </SectionCard>
 
       <SectionCard>
-        <Text style={styles.eyebrow}>{t('contacts.title')}</Text>
-        <Text style={styles.sectionTitle}>{t('contacts.savedContactsTitle')}</Text>
+        <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('contacts.title')}</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('contacts.savedContactsTitle')}</Text>
 
-        {contacts.length === 0 ? <Text style={styles.empty}>{t('contacts.empty')}</Text> : null}
+        {contacts.length === 0 ? <Text style={[styles.empty, { color: theme.mutedText }]}>{t('contacts.empty')}</Text> : null}
 
         {contacts.map((contact) => (
-          <View key={contact.id} style={styles.contactCard}>
-            <Text style={styles.contactName}>{contact.name}</Text>
-            <Text style={styles.contactMeta}>{contact.phone || t('contacts.noPhone')}</Text>
-            <Text style={styles.contactMeta}>{contact.email || t('contacts.noEmail')}</Text>
+          <View
+            key={contact.id}
+            style={[styles.contactCard, { borderColor: theme.border, backgroundColor: theme.softSurface }]}
+          >
+            <Text style={[styles.contactName, { color: theme.text }]}>{contact.name}</Text>
+            <Text style={[styles.contactMeta, { color: theme.mutedText }]}>{contact.phone || t('contacts.noPhone')}</Text>
+            <Text style={[styles.contactMeta, { color: theme.mutedText }]}>{contact.email || t('contacts.noEmail')}</Text>
 
             <View style={styles.buttonRow}>
               <View style={styles.buttonCell}>

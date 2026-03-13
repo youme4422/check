@@ -27,6 +27,8 @@ type AppStateContextValue = AppState & {
 };
 
 const AppStateContext = createContext<AppStateContextValue | null>(null);
+const ALLOWED_INTERVALS = new Set([12, 24, 48]);
+const MAX_HISTORY_ITEMS = 90;
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>(DEFAULT_APP_STATE);
@@ -55,7 +57,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   const recordCheckIn = async () => {
     const checkedAt = new Date().toISOString();
-    const nextHistory = [checkedAt, ...state.checkInHistory];
+    const nextHistory = [checkedAt, ...state.checkInHistory].slice(0, MAX_HISTORY_ITEMS);
 
     setState((current) => ({
       ...current,
@@ -69,8 +71,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setIntervalSetting = async (value: number) => {
-    setState((current) => ({ ...current, intervalHours: value }));
-    await saveIntervalHours(value);
+    const nextValue = ALLOWED_INTERVALS.has(value) ? value : DEFAULT_APP_STATE.intervalHours;
+    setState((current) => ({ ...current, intervalHours: nextValue }));
+    await saveIntervalHours(nextValue);
   };
 
   const setNotificationsSetting = async (value: boolean) => {
@@ -79,13 +82,19 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   };
 
   const upsertContact = async (contact: Contact) => {
-    const existingIndex = state.contacts.findIndex((item) => item.id === contact.id);
+    const normalizedContact = {
+      id: contact.id.trim(),
+      name: contact.name.trim().slice(0, 80),
+      phone: contact.phone.trim().slice(0, 32),
+      email: contact.email.trim().toLowerCase().slice(0, 120),
+    };
+    const existingIndex = state.contacts.findIndex((item) => item.id === normalizedContact.id);
     const nextContacts = [...state.contacts];
 
     if (existingIndex >= 0) {
-      nextContacts[existingIndex] = contact;
+      nextContacts[existingIndex] = normalizedContact;
     } else {
-      nextContacts.unshift(contact);
+      nextContacts.unshift(normalizedContact);
     }
 
     setState((current) => ({ ...current, contacts: nextContacts }));

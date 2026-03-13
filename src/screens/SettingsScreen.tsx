@@ -13,6 +13,8 @@ import { useAppState } from '../storage/AppStateContext';
 import { copyText } from '../storage/copy';
 import { ensureNotificationPermissions, notificationsSupported } from '../storage/notifications';
 import { DEFAULT_APP_STATE } from '../storage/types';
+import { useAppTheme } from '../theme/ThemeProvider';
+import { isAllowedExternalUrl } from '../utils/urlSafety';
 
 const INTERVAL_OPTIONS = [12, 24, 48];
 const LANGUAGE_OPTIONS = [
@@ -20,12 +22,14 @@ const LANGUAGE_OPTIONS = [
   { value: 'en' as const, labelKey: 'settings.languageEn' },
   { value: 'ja' as const, labelKey: 'settings.languageJa' },
   { value: 'es' as const, labelKey: 'settings.languageEs' },
+  { value: 'zh' as const, labelKey: 'settings.languageZh' },
 ];
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
 export function SettingsScreen({ navigation }: Props) {
   const { t, locale, setLocale } = useI18n();
+  const { theme } = useAppTheme();
   const {
     lastCheckInAt,
     checkInHistory,
@@ -115,7 +119,19 @@ export function SettingsScreen({ navigation }: Props) {
   };
 
   const handleOpenPrivacyPolicy = async () => {
+    if (!isAllowedExternalUrl(PRIVACY_POLICY_URL, ['https:'])) {
+      Alert.alert(t('settings.privacyErrorTitle'), t('settings.privacyErrorBody'));
+      return;
+    }
+
     try {
+      const supported = await Linking.canOpenURL(PRIVACY_POLICY_URL);
+
+      if (!supported) {
+        Alert.alert(t('settings.privacyErrorTitle'), t('settings.privacyErrorBody'));
+        return;
+      }
+
       await Linking.openURL(PRIVACY_POLICY_URL);
     } catch {
       Alert.alert(t('settings.privacyErrorTitle'), t('settings.privacyErrorBody'));
@@ -125,8 +141,8 @@ export function SettingsScreen({ navigation }: Props) {
   return (
     <ScreenContainer>
       <SectionCard>
-        <Text style={styles.eyebrow}>{t('settings.title')}</Text>
-        <Text style={styles.sectionTitle}>{t('settings.intervalLabel')}</Text>
+        <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('settings.title')}</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('settings.intervalLabel')}</Text>
         <View style={styles.choiceRow}>
           {INTERVAL_OPTIONS.map((option) => (
             <View key={option} style={styles.choiceCell}>
@@ -145,9 +161,9 @@ export function SettingsScreen({ navigation }: Props) {
       <SectionCard>
         <View style={styles.switchRow}>
           <View style={styles.switchLabelWrap}>
-            <Text style={styles.eyebrow}>{t('settings.title')}</Text>
-            <Text style={styles.sectionTitle}>{t('settings.notificationsLabel')}</Text>
-            <Text style={styles.helper}>
+            <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('settings.title')}</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('settings.notificationsLabel')}</Text>
+            <Text style={[styles.helper, { color: theme.mutedText }]}>
               {supportsNotifications
                 ? t('settings.notificationsHelper')
                 : t('settings.notificationsExpoGoHelper')}
@@ -159,15 +175,15 @@ export function SettingsScreen({ navigation }: Props) {
             onValueChange={(value) => {
               void handleToggleNotifications(value);
             }}
-            trackColor={{ false: '#C8D5CD', true: '#7FD4BE' }}
-            thumbColor={notificationsEnabled ? '#1A7F64' : '#F3F7F5'}
+            trackColor={{ false: theme.border, true: theme.secondary }}
+            thumbColor={notificationsEnabled ? theme.primary : theme.card}
           />
         </View>
       </SectionCard>
 
       <SectionCard>
-        <Text style={styles.eyebrow}>{t('settings.title')}</Text>
-        <Text style={styles.sectionTitle}>{t('settings.languageLabel')}</Text>
+        <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('settings.title')}</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('settings.languageLabel')}</Text>
         <View style={styles.languageGrid}>
           {LANGUAGE_OPTIONS.map((option) => (
             <View key={option.value} style={styles.languageChoiceCell}>
@@ -184,17 +200,17 @@ export function SettingsScreen({ navigation }: Props) {
       </SectionCard>
 
       <SectionCard>
-        <Text style={styles.eyebrow}>{t('settings.title')}</Text>
-        <Text style={styles.sectionTitle}>{t('home.lastCheckInLabel')}</Text>
-        <Text style={styles.helper}>
+        <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('settings.title')}</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('home.lastCheckInLabel')}</Text>
+        <Text style={[styles.helper, { color: theme.mutedText }]}>
           {lastCheckInAt ? formatDateTime(lastCheckInAt, locale) : t('home.noCheckInYet')}
         </Text>
       </SectionCard>
 
       <SectionCard>
-        <Text style={styles.eyebrow}>{t('settings.title')}</Text>
-        <Text style={styles.sectionTitle}>{t('history.title')}</Text>
-        <Text style={styles.helper}>{t('history.helper')}</Text>
+        <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('settings.title')}</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('history.title')}</Text>
+        <Text style={[styles.helper, { color: theme.mutedText }]}>{t('history.helper')}</Text>
         <AppButton
           label={t('home.historyButton')}
           onPress={() => navigation.navigate('History')}
@@ -203,31 +219,31 @@ export function SettingsScreen({ navigation }: Props) {
       </SectionCard>
 
       <SectionCard>
-        <Text style={styles.eyebrow}>{t('settings.title')}</Text>
-        <Text style={styles.sectionTitle}>{t('settings.privacyTitle')}</Text>
-        {privacyHelperText ? <Text style={styles.helper}>{privacyHelperText}</Text> : null}
+        <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('settings.title')}</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('settings.privacyTitle')}</Text>
+        {privacyHelperText ? <Text style={[styles.helper, { color: theme.mutedText }]}>{privacyHelperText}</Text> : null}
         <AppButton label={t('settings.privacyButton')} onPress={() => void handleOpenPrivacyPolicy()} variant="secondary" />
       </SectionCard>
 
       <SectionCard>
-        <Text style={styles.eyebrow}>{t('settings.title')}</Text>
-        <Text style={styles.sectionTitle}>{t('settings.exportTitle')}</Text>
-        <Text style={styles.helper}>{t('settings.exportHelper')}</Text>
+        <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('settings.title')}</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('settings.exportTitle')}</Text>
+        <Text style={[styles.helper, { color: theme.mutedText }]}>{t('settings.exportHelper')}</Text>
         <AppButton label={t('settings.exportButton')} onPress={handleExport} />
         <AppButton label={t('settings.copyButton')} onPress={() => void handleCopy()} variant="secondary" />
         <TextInput
           editable={false}
           multiline
           selectTextOnFocus
-          style={styles.exportBox}
+          style={[styles.exportBox, { borderColor: theme.border, backgroundColor: theme.input, color: theme.text }]}
           value={exportJson || t('settings.exportPlaceholder')}
         />
       </SectionCard>
 
       <SectionCard>
-        <Text style={styles.eyebrow}>{t('settings.title')}</Text>
-        <Text style={styles.sectionTitle}>{t('settings.resetTitle')}</Text>
-        <Text style={styles.helper}>{t('settings.resetHelper')}</Text>
+        <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('settings.title')}</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('settings.resetTitle')}</Text>
+        <Text style={[styles.helper, { color: theme.mutedText }]}>{t('settings.resetHelper')}</Text>
         <AppButton label={t('settings.resetButton')} onPress={handleReset} variant="danger" />
       </SectionCard>
     </ScreenContainer>

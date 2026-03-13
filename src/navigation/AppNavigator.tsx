@@ -1,5 +1,5 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useEffect } from 'react';
 
@@ -10,6 +10,7 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { syncScheduledNotifications } from '../storage/notifications';
 import { useAppState } from '../storage/AppStateContext';
+import { useAppTheme } from '../theme/ThemeProvider';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -23,6 +24,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export function AppNavigator() {
   const { isReady: i18nReady, t, locale } = useI18n();
   const appState = useAppState();
+  const { theme, scheme } = useAppTheme();
 
   useEffect(() => {
     if (!appState.isReady) {
@@ -45,28 +47,52 @@ export function AppNavigator() {
 
   if (!i18nReady || !appState.isReady) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#1A7F64" />
+      <View style={[styles.loading, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
 
+  const navigationTheme = scheme === 'dark'
+    ? {
+        ...DarkTheme,
+        colors: {
+          ...DarkTheme.colors,
+          background: theme.background,
+          card: theme.card,
+          text: theme.text,
+          border: theme.border,
+          primary: theme.primary,
+        },
+      }
+    : {
+        ...DefaultTheme,
+        colors: {
+          ...DefaultTheme.colors,
+          background: theme.background,
+          card: theme.card,
+          text: theme.text,
+          border: theme.border,
+          primary: theme.primary,
+        },
+      };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#FFFFFF',
+            backgroundColor: theme.card,
           },
           headerShadowVisible: false,
-          headerTintColor: '#16392E',
+          headerTintColor: theme.text,
           headerTitleStyle: {
             fontWeight: '800',
             fontSize: 18,
           },
           headerTitleAlign: 'center',
           contentStyle: {
-            backgroundColor: '#EEF4F0',
+            backgroundColor: theme.background,
           },
         }}
       >

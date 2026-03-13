@@ -22,7 +22,8 @@
     "deadlineTitle": "チェックイン時間を過ぎました",
     "deadlineBody": "アプリを開いて今すぐチェックインを記録してください。"
   },
-  "home": {    "checkInButton": "今日のチェックイン",
+  "home": {
+    "checkInButton": "今日のチェックイン",
     "heroDescription": "今日も無事だというサインをすばやく残しましょう。",
     "checkInSuccessTitle": "チェックインが完了しました",
     "checkInSuccessBody": "次のチェックイン予定が更新されました。",
@@ -110,7 +111,8 @@
     "resetConfirmTitle": "すべてのデータを初期化しますか？",
     "resetConfirmBody": "保存されたチェックイン履歴と連絡先はすべて削除されます。",
     "permissionTitle": "通知権限が必要です",
-    "permissionBody": "端末設定で通知権限を許可してから、もう一度お試しください。"
+    "permissionBody": "端末設定で通知権限を許可してから、もう一度お試しください。",
+    "languageZh": "中文"
   },
   "history": {
     "title": "チェックイン履歴",

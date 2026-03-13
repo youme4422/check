@@ -1,6 +1,8 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useAppTheme } from '../theme/ThemeProvider';
+
 export function ScreenContainer({
   children,
   scroll = true,
@@ -8,9 +10,11 @@ export function ScreenContainer({
   children: React.ReactNode;
   scroll?: boolean;
 }) {
+  const { theme } = useAppTheme();
+
   const content = scroll ? (
     <ScrollView
-      style={styles.scroll}
+      style={[styles.scroll, { backgroundColor: theme.background }]}
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
@@ -21,7 +25,7 @@ export function ScreenContainer({
     <View style={styles.content}>{children}</View>
   );
 
-  return <SafeAreaView style={styles.safeArea}>{content}</SafeAreaView>;
+  return <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>{content}</SafeAreaView>;
 }
 
 const styles = StyleSheet.create({

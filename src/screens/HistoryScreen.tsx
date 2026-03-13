@@ -6,9 +6,11 @@ import { SectionCard } from '../components/SectionCard';
 import { formatDateTime } from '../i18n/formatters';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppState } from '../storage/AppStateContext';
+import { useAppTheme } from '../theme/ThemeProvider';
 
 export function HistoryScreen() {
   const { t, locale } = useI18n();
+  const { theme } = useAppTheme();
   const { checkInHistory, clearHistory } = useAppState();
 
   const handleClear = () => {
@@ -27,14 +29,24 @@ export function HistoryScreen() {
   return (
     <ScreenContainer>
       <SectionCard>
-        <Text style={styles.eyebrow}>{t('common.appName')}</Text>
-        <Text style={styles.title}>{t('history.title')}</Text>
-        <Text style={styles.helper}>{t('history.helper')}</Text>
+        <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('common.appName')}</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{t('history.title')}</Text>
+        <Text style={[styles.helper, { color: theme.mutedText }]}>{t('history.helper')}</Text>
 
-        {checkInHistory.length === 0 ? <Text style={styles.empty}>{t('history.empty')}</Text> : null}
+        {checkInHistory.length === 0 ? <Text style={[styles.empty, { color: theme.mutedText }]}>{t('history.empty')}</Text> : null}
 
         {checkInHistory.map((item) => (
-          <Text key={item} style={styles.item}>
+          <Text
+            key={item}
+            style={[
+              styles.item,
+              {
+                backgroundColor: theme.softSurface,
+                borderColor: theme.border,
+                color: theme.text,
+              },
+            ]}
+          >
             {formatDateTime(item, locale)}
           </Text>
         ))}

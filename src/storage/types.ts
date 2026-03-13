@@ -1,4 +1,5 @@
-export type Locale = 'ko' | 'en' | 'ja' | 'es';
+export type Locale = 'ko' | 'en' | 'ja' | 'es' | 'zh';
+export type ThemeMode = 'system' | 'light' | 'dark';
 
 export type Contact = {
   id: string;

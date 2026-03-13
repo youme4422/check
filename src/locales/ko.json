@@ -22,7 +22,8 @@
     "deadlineTitle": "체크인 시간이 지났습니다",
     "deadlineBody": "앱을 열고 지금 체크인을 기록해 주세요."
   },
-  "home": {    "checkInButton": "오늘 체크인",
+  "home": {
+    "checkInButton": "오늘 체크인",
     "heroDescription": "오늘 안전하다는 신호를 빠르게 남겨 보세요.",
     "checkInSuccessTitle": "체크인이 완료되었습니다",
     "checkInSuccessBody": "다음 체크인 일정이 다시 계산되었습니다.",
@@ -110,7 +111,8 @@
     "resetConfirmTitle": "모든 데이터를 초기화할까요?",
     "resetConfirmBody": "저장된 체크인 기록과 연락처가 모두 삭제됩니다.",
     "permissionTitle": "알림 권한이 필요합니다",
-    "permissionBody": "기기 설정에서 알림 권한을 허용한 뒤 다시 시도해 주세요."
+    "permissionBody": "기기 설정에서 알림 권한을 허용한 뒤 다시 시도해 주세요.",
+    "languageZh": "中文"
   },
   "history": {
     "title": "체크인 기록",

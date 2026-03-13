@@ -1,6 +1,7 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { Contact } from '../storage/types';
+import { useAppTheme } from '../theme/ThemeProvider';
 
 type Props = {
   visible: boolean;
@@ -21,26 +22,47 @@ export function ContactPickerModal({
   onClose,
   onSelect,
 }: Props) {
+  const { theme, scheme } = useAppTheme();
+
   return (
     <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <Text style={styles.title}>{title}</Text>
+      <View style={[styles.overlay, { backgroundColor: theme.overlay }]}>
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border, shadowColor: '#000000' }]}>
+          <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
           <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
-            {contacts.length === 0 ? <Text style={styles.empty}>{emptyText}</Text> : null}
+            {contacts.length === 0 ? <Text style={[styles.empty, { color: theme.mutedText }]}>{emptyText}</Text> : null}
             {contacts.map((contact) => (
               <Pressable
                 key={contact.id}
                 onPress={() => onSelect(contact)}
-                style={({ pressed }) => [styles.item, pressed ? styles.itemPressed : null]}
+                style={({ pressed }) => [
+                  styles.item,
+                  {
+                    backgroundColor: theme.softSurface,
+                    borderColor: theme.border,
+                  },
+                  pressed ? styles.itemPressed : null,
+                ]}
               >
-                <Text style={styles.name}>{contact.name}</Text>
-                <Text style={styles.meta}>{contact.phone || contact.email}</Text>
+                <Text style={[styles.name, { color: theme.text }]}>{contact.name}</Text>
+                <Text style={[styles.meta, { color: theme.mutedText }]}>{contact.phone || contact.email}</Text>
               </Pressable>
             ))}
           </ScrollView>
-          <Pressable onPress={onClose} style={({ pressed }) => [styles.close, pressed ? styles.itemPressed : null]}>
-            <Text style={styles.closeLabel}>{closeLabel}</Text>
+          <Pressable
+            onPress={onClose}
+            style={({ pressed }) => [
+              styles.close,
+              {
+                backgroundColor: theme.softSurface,
+                borderColor: theme.border,
+              },
+              pressed ? styles.itemPressed : null,
+            ]}
+          >
+            <Text style={[styles.closeLabel, { color: scheme === 'dark' ? theme.secondary : theme.primary }]}>
+              {closeLabel}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -113,7 +135,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F2F7F4',
+    borderWidth: 1,
   },
   closeLabel: {
     color: '#196B57',
