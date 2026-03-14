@@ -8,18 +8,52 @@ export type Contact = {
   email: string;
 };
 
+export type MessengerChannels = {
+  line: boolean;
+  whatsapp: boolean;
+  telegram: boolean;
+  email: boolean;
+};
+
+export type MessengerLinks = {
+  lineUserId: string;
+  whatsappId: string;
+  telegramId: string;
+  email: string;
+};
+
 export type AppState = {
+  accountId: string;
   lastCheckInAt: string | null;
+  deadmanLastSentForCheckInAt: string | null;
   checkInHistory: string[];
   intervalHours: number;
   notificationsEnabled: boolean;
+  emergencyMessage: string;
   contacts: Contact[];
+  messengerChannels: MessengerChannels;
+  messengerLinks: MessengerLinks;
 };
 
 export const DEFAULT_APP_STATE: AppState = {
+  accountId: '',
   lastCheckInAt: null,
+  deadmanLastSentForCheckInAt: null,
   checkInHistory: [],
   intervalHours: 24,
   notificationsEnabled: false,
+  emergencyMessage: '',
   contacts: [],
+  messengerChannels: {
+    line: false,
+    whatsapp: false,
+    telegram: false,
+    email: false,
+  },
+  messengerLinks: {
+    lineUserId: '',
+    whatsappId: '',
+    telegramId: '',
+    email: '',
+  },
 };

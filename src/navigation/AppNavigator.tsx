@@ -7,14 +7,16 @@ import { useI18n } from '../i18n/I18nProvider';
 import { EmergencyContactsScreen } from '../screens/EmergencyContactsScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { HomeScreen } from '../screens/HomeScreen';
+import { MessengerLinksScreen } from '../screens/MessengerLinksScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
-import { syncScheduledNotifications } from '../storage/notifications';
 import { useAppState } from '../storage/AppStateContext';
+import { syncScheduledNotifications } from '../storage/notifications';
 import { useAppTheme } from '../theme/ThemeProvider';
 
 export type RootStackParamList = {
   Home: undefined;
   EmergencyContacts: undefined;
+  MessengerLinks: undefined;
   Settings: undefined;
   History: undefined;
 };
@@ -101,6 +103,11 @@ export function AppNavigator() {
           name="EmergencyContacts"
           component={EmergencyContactsScreen}
           options={{ title: t('contacts.title') }}
+        />
+        <Stack.Screen
+          name="MessengerLinks"
+          component={MessengerLinksScreen}
+          options={{ title: t('settings.messengerLabel') }}
         />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t('settings.title') }} />
         <Stack.Screen name="History" component={HistoryScreen} options={{ title: t('history.title') }} />

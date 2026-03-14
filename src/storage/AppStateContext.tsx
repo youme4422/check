@@ -9,17 +9,27 @@ import {
   loadAppState,
   resetAppStateStorage,
   saveCheckInHistory,
+  saveAccountId,
   saveContacts,
+  saveDeadmanLastSentForCheckInAt,
+  saveEmergencyMessage,
   saveIntervalHours,
   saveLastCheckInAt,
+  saveMessengerChannels,
+  saveMessengerLinks,
   saveNotificationsEnabled,
 } from './storage';
 
 type AppStateContextValue = AppState & {
   isReady: boolean;
   recordCheckIn: () => Promise<string>;
+  setAccountIdSetting: (value: string) => Promise<void>;
   setIntervalSetting: (value: number) => Promise<void>;
   setNotificationsSetting: (value: boolean) => Promise<void>;
+  setDeadmanLastSentForCheckInSetting: (value: string | null) => Promise<void>;
+  setEmergencyMessageSetting: (value: string) => Promise<void>;
+  setMessengerChannelsSetting: (value: AppState['messengerChannels']) => Promise<void>;
+  setMessengerLinksSetting: (value: AppState['messengerLinks']) => Promise<void>;
   upsertContact: (contact: Contact) => Promise<void>;
   removeContact: (contactId: string) => Promise<void>;
   clearHistory: () => Promise<void>;
@@ -62,12 +72,26 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setState((current) => ({
       ...current,
       lastCheckInAt: checkedAt,
+      deadmanLastSentForCheckInAt: null,
       checkInHistory: nextHistory,
     }));
 
-    await Promise.all([saveLastCheckInAt(checkedAt), saveCheckInHistory(nextHistory)]);
+    await Promise.all([
+      saveLastCheckInAt(checkedAt),
+      saveDeadmanLastSentForCheckInAt(null),
+      saveCheckInHistory(nextHistory),
+    ]);
 
     return checkedAt;
+  };
+
+  const setAccountIdSetting = async (value: string) => {
+    const nextValue = value
+      .trim()
+      .slice(0, 64)
+      .replace(/[^a-zA-Z0-9._-]/g, '');
+    setState((current) => ({ ...current, accountId: nextValue }));
+    await saveAccountId(nextValue);
   };
 
   const setIntervalSetting = async (value: number) => {
@@ -79,6 +103,40 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const setNotificationsSetting = async (value: boolean) => {
     setState((current) => ({ ...current, notificationsEnabled: value }));
     await saveNotificationsEnabled(value);
+  };
+
+  const setEmergencyMessageSetting = async (value: string) => {
+    const nextValue = value.trim().slice(0, 600);
+    setState((current) => ({ ...current, emergencyMessage: nextValue }));
+    await saveEmergencyMessage(nextValue);
+  };
+
+  const setDeadmanLastSentForCheckInSetting = async (value: string | null) => {
+    setState((current) => ({ ...current, deadmanLastSentForCheckInAt: value }));
+    await saveDeadmanLastSentForCheckInAt(value);
+  };
+
+  const setMessengerChannelsSetting = async (value: AppState['messengerChannels']) => {
+    const next = {
+      line: Boolean(value.line),
+      whatsapp: Boolean(value.whatsapp),
+      telegram: Boolean(value.telegram),
+      email: Boolean(value.email),
+    };
+    setState((current) => ({ ...current, messengerChannels: next }));
+    await saveMessengerChannels(next);
+  };
+
+  const setMessengerLinksSetting = async (value: AppState['messengerLinks']) => {
+    const next = {
+      lineUserId: value.lineUserId.trim().slice(0, 128),
+      whatsappId: value.whatsappId.trim().slice(0, 64),
+      telegramId: value.telegramId.trim().slice(0, 64),
+      email: value.email.trim().toLowerCase().slice(0, 120),
+    };
+
+    setState((current) => ({ ...current, messengerLinks: next }));
+    await saveMessengerLinks(next);
   };
 
   const upsertContact = async (contact: Contact) => {
@@ -128,8 +186,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         ...state,
         isReady,
         recordCheckIn,
+        setAccountIdSetting,
         setIntervalSetting,
         setNotificationsSetting,
+        setDeadmanLastSentForCheckInSetting,
+        setEmergencyMessageSetting,
+        setMessengerChannelsSetting,
+        setMessengerLinksSetting,
         upsertContact,
         removeContact,
         clearHistory,

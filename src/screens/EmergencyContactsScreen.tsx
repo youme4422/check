@@ -1,229 +1,56 @@
-import { Alert, Linking, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useState } from 'react';
+import { Alert, StyleSheet, Text, TextInput } from 'react-native';
+import { useEffect, useState } from 'react';
 
 import { AppButton } from '../components/AppButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { SectionCard } from '../components/SectionCard';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppState } from '../storage/AppStateContext';
-import type { Contact } from '../storage/types';
 import { useAppTheme } from '../theme/ThemeProvider';
-import { isAllowedExternalUrl } from '../utils/urlSafety';
-
-type FormState = {
-  id: string | null;
-  name: string;
-  phone: string;
-  email: string;
-};
-
-const EMPTY_FORM: FormState = {
-  id: null,
-  name: '',
-  phone: '',
-  email: '',
-};
 
 export function EmergencyContactsScreen() {
   const { t } = useI18n();
   const { theme } = useAppTheme();
-  const { contacts, upsertContact, removeContact } = useAppState();
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const { emergencyMessage, setEmergencyMessageSetting } = useAppState();
+  const [messageDraft, setMessageDraft] = useState(emergencyMessage || t('messages.emergencyBody'));
 
-  const handleSave = async () => {
-    const validationError = validate(form, t);
-
-    if (validationError) {
-      Alert.alert(t('contacts.validationTitle'), validationError);
-      return;
-    }
-
-    const nextContact: Contact = {
-      id: form.id ?? String(Date.now()),
-      name: form.name.trim(),
-      phone: form.phone.trim(),
-      email: form.email.trim(),
-    };
-
-    await upsertContact(nextContact);
-    setForm(EMPTY_FORM);
-
-    Alert.alert(t('contacts.savedTitle'), form.id ? t('contacts.updatedBody') : t('contacts.savedBody'));
-  };
-
-  const handleDelete = (contact: Contact) => {
-    Alert.alert(t('contacts.deleteConfirmTitle'), t('contacts.deleteConfirmBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('common.delete'),
-        style: 'destructive',
-        onPress: () => {
-          void removeContact(contact.id);
-          if (form.id === contact.id) {
-            setForm(EMPTY_FORM);
-          }
-        },
-      },
-    ]);
-  };
-
-  const openQuickMessage = async (contact: Contact, mode: 'sms' | 'email') => {
-    const body = encodeURIComponent(t('messages.emergencyBody'));
-    const subject = encodeURIComponent(t('messages.emergencySubject'));
-
-    try {
-      if (mode === 'sms') {
-        if (!contact.phone.trim()) {
-          Alert.alert(t('contacts.validationTitle'), t('home.missingPhone'));
-          return;
-        }
-
-        const smsUrl = `sms:${contact.phone}?body=${body}`;
-        if (!isAllowedExternalUrl(smsUrl, ['sms:']) || !(await Linking.canOpenURL(smsUrl))) {
-          Alert.alert(t('home.composerErrorTitle'), t('home.composerErrorBody'));
-          return;
-        }
-
-        await Linking.openURL(smsUrl);
-        return;
-      }
-
-      if (!contact.email.trim()) {
-        Alert.alert(t('contacts.validationTitle'), t('home.missingEmail'));
-        return;
-      }
-
-      const emailUrl = `mailto:${contact.email}?subject=${subject}&body=${body}`;
-      if (!isAllowedExternalUrl(emailUrl, ['mailto:']) || !(await Linking.canOpenURL(emailUrl))) {
-        Alert.alert(t('home.composerErrorTitle'), t('home.composerErrorBody'));
-        return;
-      }
-
-      await Linking.openURL(emailUrl);
-    } catch {
-      Alert.alert(t('home.composerErrorTitle'), t('home.composerErrorBody'));
-    }
-  };
+  useEffect(() => {
+    setMessageDraft(emergencyMessage || t('messages.emergencyBody'));
+  }, [emergencyMessage, t]);
 
   return (
     <ScreenContainer>
       <SectionCard>
         <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('contacts.title')}</Text>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>
-          {form.id ? t('contacts.editSectionTitle') : t('contacts.addSectionTitle')}
-        </Text>
-
-        <Text style={[styles.label, { color: theme.mutedText }]}>{t('contacts.nameLabel')}</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('contacts.messageSectionTitle')}</Text>
+        <Text style={[styles.label, { color: theme.mutedText }]}>{t('contacts.messageLabel')}</Text>
         <TextInput
-          value={form.name}
-          onChangeText={(value) => setForm((current) => ({ ...current, name: value }))}
-          placeholder={t('contacts.namePlaceholder')}
-          style={[styles.input, { borderColor: theme.border, backgroundColor: theme.input, color: theme.text }]}
+          value={messageDraft}
+          onChangeText={setMessageDraft}
+          placeholder={t('contacts.messagePlaceholder')}
+          style={[
+            styles.input,
+            styles.messageInput,
+            { borderColor: theme.border, backgroundColor: theme.input, color: theme.text },
+          ]}
+          multiline
+          textAlignVertical="top"
+          maxLength={600}
           placeholderTextColor="#8A9A92"
         />
-
-        <Text style={[styles.label, { color: theme.mutedText }]}>{t('contacts.phoneLabel')}</Text>
-        <TextInput
-          value={form.phone}
-          onChangeText={(value) => setForm((current) => ({ ...current, phone: value }))}
-          placeholder={t('contacts.phonePlaceholder')}
-          style={[styles.input, { borderColor: theme.border, backgroundColor: theme.input, color: theme.text }]}
-          keyboardType="phone-pad"
-          inputMode="tel"
-          placeholderTextColor="#8A9A92"
+        <AppButton
+          label={t('contacts.saveMessageButton')}
+          onPress={() => {
+            void (async () => {
+              await setEmergencyMessageSetting(messageDraft);
+              Alert.alert(t('contacts.savedTitle'), t('contacts.savedBody'));
+            })();
+          }}
+          variant="secondary"
         />
-
-        <Text style={[styles.label, { color: theme.mutedText }]}>{t('contacts.emailLabel')}</Text>
-        <TextInput
-          value={form.email}
-          onChangeText={(value) => setForm((current) => ({ ...current, email: value }))}
-          placeholder={t('contacts.emailPlaceholder')}
-          style={[styles.input, { borderColor: theme.border, backgroundColor: theme.input, color: theme.text }]}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          inputMode="email"
-          placeholderTextColor="#8A9A92"
-        />
-
-        <AppButton label={t('contacts.saveButton')} onPress={handleSave} />
-        {form.id ? (
-          <AppButton label={t('contacts.cancelEditButton')} onPress={() => setForm(EMPTY_FORM)} variant="secondary" />
-        ) : null}
-      </SectionCard>
-
-      <SectionCard>
-        <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('contacts.title')}</Text>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('contacts.savedContactsTitle')}</Text>
-
-        {contacts.length === 0 ? <Text style={[styles.empty, { color: theme.mutedText }]}>{t('contacts.empty')}</Text> : null}
-
-        {contacts.map((contact) => (
-          <View
-            key={contact.id}
-            style={[styles.contactCard, { borderColor: theme.border, backgroundColor: theme.softSurface }]}
-          >
-            <Text style={[styles.contactName, { color: theme.text }]}>{contact.name}</Text>
-            <Text style={[styles.contactMeta, { color: theme.mutedText }]}>{contact.phone || t('contacts.noPhone')}</Text>
-            <Text style={[styles.contactMeta, { color: theme.mutedText }]}>{contact.email || t('contacts.noEmail')}</Text>
-
-            <View style={styles.buttonRow}>
-              <View style={styles.buttonCell}>
-                <AppButton label={t('contacts.editButton')} onPress={() => setForm(contact)} variant="secondary" />
-              </View>
-              <View style={styles.buttonCell}>
-                <AppButton
-                  label={t('contacts.deleteButton')}
-                  onPress={() => handleDelete(contact)}
-                  variant="danger"
-                />
-              </View>
-            </View>
-
-            <View style={styles.buttonRow}>
-              <View style={styles.buttonCell}>
-                <AppButton
-                  label={t('contacts.quickSmsButton')}
-                  onPress={() => {
-                    void openQuickMessage(contact, 'sms');
-                  }}
-                  variant="secondary"
-                />
-              </View>
-              <View style={styles.buttonCell}>
-                <AppButton
-                  label={t('contacts.quickEmailButton')}
-                  onPress={() => {
-                    void openQuickMessage(contact, 'email');
-                  }}
-                  variant="secondary"
-                />
-              </View>
-            </View>
-          </View>
-        ))}
       </SectionCard>
     </ScreenContainer>
   );
-}
-
-function validate(form: FormState, t: (key: string) => string) {
-  if (!form.name.trim()) {
-    return t('contacts.validationNameRequired');
-  }
-
-  if (!form.phone.trim() && !form.email.trim()) {
-    return t('contacts.validationContactRequired');
-  }
-
-  if (form.phone.trim() && !/^[0-9+\-() ]{7,20}$/.test(form.phone.trim())) {
-    return t('contacts.validationPhoneInvalid');
-  }
-
-  if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-    return t('contacts.validationEmailInvalid');
-  }
-
-  return '';
 }
 
 const styles = StyleSheet.create({
@@ -259,34 +86,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7FBF8',
     color: '#17362C',
   },
-  empty: {
-    marginTop: 6,
-    color: '#66766E',
-    lineHeight: 22,
-  },
-  contactCard: {
-    marginTop: 14,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#E1E9E4',
-    backgroundColor: '#FAFCFB',
-    padding: 14,
-  },
-  contactName: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#17362C',
-  },
-  contactMeta: {
-    marginTop: 4,
-    color: '#66766E',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 2,
-  },
-  buttonCell: {
-    flex: 1,
+  messageInput: {
+    minHeight: 120,
   },
 });

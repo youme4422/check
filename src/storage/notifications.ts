@@ -64,6 +64,10 @@ export async function syncScheduledNotifications(args: ScheduleArgs) {
   const Notifications = await import('expo-notifications');
   await Notifications.cancelAllScheduledNotificationsAsync();
 
+  if (args.locale === 'zh') {
+    return;
+  }
+
   if (!args.notificationsEnabled || !args.lastCheckInAt) {
     return;
   }

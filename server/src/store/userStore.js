@@ -5,6 +5,8 @@ export function saveMessengerLinks(userId, links) {
     userId,
     lineUserId: links.lineUserId || '',
     telegramChatId: links.telegramChatId || '',
+    email: links.email || '',
+    whatsappTo: links.whatsappTo || '',
   };
 
   users.set(userId, nextUser);

@@ -10,6 +10,7 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import { formatRemainingTime } from '../i18n/formatters';
 import { useI18n } from '../i18n/I18nProvider';
 import type { RootStackParamList } from '../navigation/AppNavigator';
+import { sendDeadmanAlert } from '../services/messengerApi';
 import { useAppState } from '../storage/AppStateContext';
 import type { Contact } from '../storage/types';
 import { useAppTheme } from '../theme/ThemeProvider';
@@ -21,7 +22,18 @@ type PickerMode = 'sms' | 'email' | null;
 export function HomeScreen({ navigation }: Props) {
   const { t } = useI18n();
   const { theme, scheme } = useAppTheme();
-  const { lastCheckInAt, intervalHours, contacts, recordCheckIn } = useAppState();
+  const {
+    accountId,
+    lastCheckInAt,
+    deadmanLastSentForCheckInAt,
+    intervalHours,
+    contacts,
+    emergencyMessage,
+    messengerChannels,
+    messengerLinks,
+    recordCheckIn,
+    setDeadmanLastSentForCheckInSetting,
+  } = useAppState();
   const [now, setNow] = useState(Date.now());
   const [pickerMode, setPickerMode] = useState<PickerMode>(null);
   const [checkInNotice, setCheckInNotice] = useState('');
@@ -44,11 +56,64 @@ export function HomeScreen({ navigation }: Props) {
     return () => clearTimeout(timer);
   }, [checkInNotice]);
 
-  const deadlineAt = lastCheckInAt
-    ? new Date(lastCheckInAt).getTime() + intervalMs
-    : null;
+  const deadlineAt = lastCheckInAt ? new Date(lastCheckInAt).getTime() + intervalMs : null;
   const remainingMs = deadlineAt ? deadlineAt - now : intervalMs;
   const isOverdue = deadlineAt ? remainingMs <= 0 : false;
+
+  useEffect(() => {
+    const tryAutoDispatch = async () => {
+      if (!isOverdue || !lastCheckInAt || deadmanLastSentForCheckInAt === lastCheckInAt) {
+        return;
+      }
+
+      const channels: ('line' | 'telegram' | 'email' | 'whatsapp')[] = [];
+      if (messengerChannels.line && messengerLinks.lineUserId.trim()) {
+        channels.push('line');
+      }
+      if (messengerChannels.telegram && messengerLinks.telegramId.trim()) {
+        channels.push('telegram');
+      }
+      if (messengerChannels.email && messengerLinks.email.trim()) {
+        channels.push('email');
+      }
+      if (messengerChannels.whatsapp && messengerLinks.whatsappId.trim()) {
+        channels.push('whatsapp');
+      }
+
+      if (!accountId.trim() || channels.length === 0) {
+        return;
+      }
+
+      try {
+        await sendDeadmanAlert({
+          accountId,
+          channels,
+          text: emergencyMessage || t('messages.emergencyBody'),
+        });
+        await setDeadmanLastSentForCheckInSetting(lastCheckInAt);
+      } catch {
+        // Avoid repeated error popups while the app re-renders in overdue state.
+      }
+    };
+
+    void tryAutoDispatch();
+  }, [
+    accountId,
+    deadmanLastSentForCheckInAt,
+    emergencyMessage,
+    isOverdue,
+    lastCheckInAt,
+    messengerChannels.email,
+    messengerChannels.line,
+    messengerChannels.telegram,
+    messengerChannels.whatsapp,
+    messengerLinks.email,
+    messengerLinks.lineUserId,
+    messengerLinks.telegramId,
+    messengerLinks.whatsappId,
+    setDeadmanLastSentForCheckInSetting,
+    t,
+  ]);
 
   const handleCheckIn = async () => {
     await recordCheckIn();
@@ -60,7 +125,7 @@ export function HomeScreen({ navigation }: Props) {
         {
           day: t('time.day'),
           hour: t('time.hour'),
-          minute: t('time.minute')
+          minute: t('time.minute'),
         },
         t('time.ready')
       )
@@ -79,7 +144,8 @@ export function HomeScreen({ navigation }: Props) {
   const openComposer = async (mode: Exclude<PickerMode, null>, contact: Contact) => {
     setPickerMode(null);
 
-    const body = encodeURIComponent(t('messages.emergencyBody'));
+    const messageText = emergencyMessage || t('messages.emergencyBody');
+    const body = encodeURIComponent(messageText);
     const subject = encodeURIComponent(t('messages.emergencySubject'));
 
     if (mode === 'sms') {
@@ -140,7 +206,14 @@ export function HomeScreen({ navigation }: Props) {
 
       {isOverdue ? (
         <SectionCard variant="warning">
-          <Text style={[styles.alertPill, { backgroundColor: scheme === 'dark' ? '#352524' : '#FBE9E8', color: theme.warningText }]}>Attention Needed</Text>
+          <Text
+            style={[
+              styles.alertPill,
+              { backgroundColor: scheme === 'dark' ? '#352524' : '#FBE9E8', color: theme.warningText },
+            ]}
+          >
+            Attention Needed
+          </Text>
           <Text style={[styles.bannerTitle, { color: theme.warningText }]}>{t('home.missedTitle')}</Text>
           <Text style={[styles.bannerBody, { color: theme.mutedText }]}>{t('home.missedBody')}</Text>
           <AppButton label={t('home.sendSms')} onPress={() => handleQuickAction('sms')} />
@@ -179,11 +252,18 @@ export function HomeScreen({ navigation }: Props) {
 
       <View style={[styles.actionPanel, { backgroundColor: theme.softSurface, borderColor: theme.border }]}>
         <Text style={[styles.panelLabel, { color: theme.mutedText }]}>Quick Actions</Text>
-        <AppButton
-          label={t('home.contactsButton')}
-          onPress={() => navigation.navigate('EmergencyContacts')}
-          variant="secondary"
-        />
+        <View style={styles.quickRow}>
+          <View style={styles.quickCell}>
+            <AppButton label={t('contacts.title')} onPress={() => navigation.navigate('EmergencyContacts')} variant="secondary" />
+          </View>
+          <View style={styles.quickCell}>
+            <AppButton
+              label={t('settings.messengerLabel')}
+              onPress={() => navigation.navigate('MessengerLinks')}
+              variant="secondary"
+            />
+          </View>
+        </View>
       </View>
 
       <AppButton label={t('home.settingsButton')} onPress={() => navigation.navigate('Settings')} variant="secondary" />
@@ -240,7 +320,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1.1,
     textTransform: 'uppercase',
-    color: '#1A7F64'
+    color: '#1A7F64',
   },
   alertPill: {
     alignSelf: 'flex-start',
@@ -252,24 +332,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0.4,
-    textTransform: 'uppercase'
+    textTransform: 'uppercase',
   },
   bannerTitle: {
     marginTop: 10,
     fontSize: 21,
     fontWeight: '800',
-    color: '#8C2F39'
+    color: '#8C2F39',
   },
   bannerBody: {
     color: '#694148',
     marginTop: 8,
-    lineHeight: 22
+    lineHeight: 22,
   },
   heroTitle: {
     fontSize: 28,
     fontWeight: '800',
     color: '#17362C',
-    letterSpacing: -0.4
+    letterSpacing: -0.4,
   },
   heroHeader: {
     flexDirection: 'row',
@@ -284,7 +364,7 @@ const styles = StyleSheet.create({
   heroBody: {
     marginTop: 10,
     color: '#5A6B62',
-    lineHeight: 23
+    lineHeight: 23,
   },
   checkInButton: {
     marginTop: 18,
@@ -338,6 +418,13 @@ const styles = StyleSheet.create({
     color: '#648075',
     marginBottom: 2,
   },
+  quickRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  quickCell: {
+    flex: 1,
+  },
 });
 
 function formatClockCountdown(remainingMs: number) {
@@ -347,7 +434,5 @@ function formatClockCountdown(remainingMs: number) {
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
-  return [hours, minutes, seconds]
-    .map((value) => String(value).padStart(2, '0'))
-    .join(':');
+  return [hours, minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':');
 }
