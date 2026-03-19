@@ -49,12 +49,19 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
     const hydrate = async () => {
       const stored = await loadAppState();
+      let nextState = stored;
+
+      if (!stored.accountId) {
+        const generatedAccountId = createDefaultAccountId();
+        nextState = { ...stored, accountId: generatedAccountId };
+        await saveAccountId(generatedAccountId);
+      }
 
       if (!isMounted) {
         return;
       }
 
-      setState(stored);
+      setState(nextState);
       setIsReady(true);
     };
 
@@ -119,7 +126,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const setMessengerChannelsSetting = async (value: AppState['messengerChannels']) => {
     const next = {
       line: Boolean(value.line),
-      whatsapp: Boolean(value.whatsapp),
       telegram: Boolean(value.telegram),
       email: Boolean(value.email),
     };
@@ -130,7 +136,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const setMessengerLinksSetting = async (value: AppState['messengerLinks']) => {
     const next = {
       lineUserId: value.lineUserId.trim().slice(0, 128),
-      whatsappId: value.whatsappId.trim().slice(0, 64),
       telegramId: value.telegramId.trim().slice(0, 64),
       email: value.email.trim().toLowerCase().slice(0, 120),
     };
@@ -202,6 +207,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       {children}
     </AppStateContext.Provider>
   );
+}
+
+function createDefaultAccountId() {
+  const seed = Math.random().toString(36).slice(2, 8);
+  return `taeb-${Date.now().toString(36)}-${seed}`;
 }
 
 export function useAppState() {

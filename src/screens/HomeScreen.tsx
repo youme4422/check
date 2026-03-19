@@ -57,27 +57,29 @@ export function HomeScreen({ navigation }: Props) {
   }, [checkInNotice]);
 
   const deadlineAt = lastCheckInAt ? new Date(lastCheckInAt).getTime() + intervalMs : null;
+  const dispatchAt = lastCheckInAt ? new Date(lastCheckInAt).getTime() + intervalMs * 2 : null;
   const remainingMs = deadlineAt ? deadlineAt - now : intervalMs;
   const isOverdue = deadlineAt ? remainingMs <= 0 : false;
+  const isDispatchDue = dispatchAt ? now >= dispatchAt : false;
 
   useEffect(() => {
     const tryAutoDispatch = async () => {
-      if (!isOverdue || !lastCheckInAt || deadmanLastSentForCheckInAt === lastCheckInAt) {
+      if (!isDispatchDue || !lastCheckInAt || deadmanLastSentForCheckInAt === lastCheckInAt) {
         return;
       }
 
-      const channels: ('line' | 'telegram' | 'email' | 'whatsapp')[] = [];
-      if (messengerChannels.line && messengerLinks.lineUserId.trim()) {
+      const lineReady = messengerChannels.line;
+      const telegramReady = messengerChannels.telegram;
+      const emailReady = messengerChannels.email && messengerLinks.email.trim();
+      const channels: ('line' | 'telegram' | 'email')[] = [];
+      if (lineReady) {
         channels.push('line');
       }
-      if (messengerChannels.telegram && messengerLinks.telegramId.trim()) {
+      if (telegramReady) {
         channels.push('telegram');
       }
-      if (messengerChannels.email && messengerLinks.email.trim()) {
+      if (emailReady) {
         channels.push('email');
-      }
-      if (messengerChannels.whatsapp && messengerLinks.whatsappId.trim()) {
-        channels.push('whatsapp');
       }
 
       if (!accountId.trim() || channels.length === 0) {
@@ -101,16 +103,14 @@ export function HomeScreen({ navigation }: Props) {
     accountId,
     deadmanLastSentForCheckInAt,
     emergencyMessage,
-    isOverdue,
+    isDispatchDue,
     lastCheckInAt,
     messengerChannels.email,
     messengerChannels.line,
     messengerChannels.telegram,
-    messengerChannels.whatsapp,
     messengerLinks.email,
     messengerLinks.lineUserId,
     messengerLinks.telegramId,
-    messengerLinks.whatsappId,
     setDeadmanLastSentForCheckInSetting,
     t,
   ]);

@@ -1,78 +1,174 @@
 import { Router } from 'express';
 
 import { dispatchMessage } from '../services/message.service.js';
-import { saveMessengerLinks } from '../store/userStore.js';
+import { createLinkCode, saveMessengerLinks } from '../store/userStore.js';
+import { sendError, sendOk } from '../utils/http.js';
 
 export const messagesRouter = Router();
 
+function isValidUserId(value) {
+  return /^[a-zA-Z0-9._-]{3,64}$/.test(value);
+}
+
+function isValidTelegramChatId(value) {
+  return /^-?\d{5,20}$/.test(value);
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function isValidLineUserId(value) {
+  return /^U[0-9a-fA-F]{32}$/.test(value);
+}
+
 messagesRouter.post('/users/:userId/messenger-links', (req, res) => {
-  const userId = req.params.userId?.trim();
+  const userId = String(req.params.userId || '').trim();
+  const channel = String(req.body?.channel || '').trim().toLowerCase();
+  const chatId = String(req.body?.chatId || '').trim();
   const lineUserId = String(req.body?.lineUserId || '').trim();
-  const telegramChatId = String(req.body?.telegramChatId || '').trim();
   const email = String(req.body?.email || '').trim().toLowerCase();
-  const whatsappTo = String(req.body?.whatsappTo || '').trim();
+  const telegramChatId = String(req.body?.telegramChatId || '').trim();
 
-  if (!userId) {
-    res.status(400).json({ error: 'userId is required.' });
+  if (!isValidUserId(userId)) {
+    sendError(res, 400, 'INVALID_USER_ID', 'userId must be 3-64 chars: letters, numbers, dot, underscore, or hyphen.');
     return;
   }
 
-  if (!lineUserId && !telegramChatId && !email && !whatsappTo) {
-    res.status(400).json({ error: 'At least one recipient is required.' });
+  // Telegram/email format
+  if (channel || chatId) {
+    if (!['line', 'telegram', 'email'].includes(channel)) {
+      sendError(res, 400, 'UNSUPPORTED_CHANNEL', 'Only line, telegram, or email channel is enabled in this mode.');
+      return;
+    }
+
+    if (channel === 'line') {
+      if (!isValidLineUserId(lineUserId)) {
+        sendError(res, 400, 'INVALID_LINE_USER_ID', 'lineUserId format is invalid.');
+        return;
+      }
+
+      const saved = saveMessengerLinks(userId, { lineUserId });
+      sendOk(res, { status: 'saved', user: saved });
+      return;
+    }
+
+    if (channel === 'telegram') {
+      if (!isValidTelegramChatId(chatId)) {
+        sendError(res, 400, 'INVALID_CHAT_ID', 'chatId format is invalid.');
+        return;
+      }
+
+      const saved = saveMessengerLinks(userId, { telegramChatId: chatId });
+      sendOk(res, { status: 'saved', user: saved });
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      sendError(res, 400, 'INVALID_EMAIL', 'email format is invalid.');
+      return;
+    }
+
+    const saved = saveMessengerLinks(userId, { email });
+    sendOk(res, { status: 'saved', user: saved });
     return;
   }
 
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    res.status(400).json({ error: 'email format is invalid.' });
+  // Backward compatibility: { lineUserId, telegramChatId, email }
+  const hasLine = Boolean(lineUserId);
+  const hasTelegram = Boolean(telegramChatId);
+  const hasEmail = Boolean(email);
+
+  if (!hasLine && !hasTelegram && !hasEmail) {
+    sendError(res, 400, 'NO_RECIPIENT', 'lineUserId, telegramChatId or email is required.');
     return;
   }
 
-  if (whatsappTo && !/^\+?[1-9]\d{7,14}$/.test(whatsappTo)) {
-    res.status(400).json({ error: 'whatsappTo format is invalid.' });
+  if (hasLine && !isValidLineUserId(lineUserId)) {
+    sendError(res, 400, 'INVALID_LINE_USER_ID', 'lineUserId format is invalid.');
     return;
   }
 
-  const saved = saveMessengerLinks(userId, { lineUserId, telegramChatId, email, whatsappTo });
+  if (hasTelegram && !isValidTelegramChatId(telegramChatId)) {
+    sendError(res, 400, 'INVALID_TELEGRAM_CHAT_ID', 'telegramChatId format is invalid.');
+    return;
+  }
 
-  res.json({
-    status: 'saved',
-    user: saved,
+  if (hasEmail && !isValidEmail(email)) {
+    sendError(res, 400, 'INVALID_EMAIL', 'email format is invalid.');
+    return;
+  }
+
+  const saved = saveMessengerLinks(userId, {
+    lineUserId: hasLine ? lineUserId : undefined,
+    telegramChatId: hasTelegram ? telegramChatId : undefined,
+    email: hasEmail ? email : undefined,
   });
+  sendOk(res, { status: 'saved', user: saved });
+});
+
+messagesRouter.post('/users/:userId/link-codes', (req, res) => {
+  const userId = String(req.params.userId || '').trim();
+  const channel = String(req.body?.channel || '').trim().toLowerCase();
+
+  if (!isValidUserId(userId)) {
+    sendError(res, 400, 'INVALID_USER_ID', 'userId must be 3-64 chars: letters, numbers, dot, underscore, or hyphen.');
+    return;
+  }
+
+  if (!['line', 'telegram'].includes(channel)) {
+    sendError(res, 400, 'UNSUPPORTED_CHANNEL', 'Only line or telegram is supported for link codes.');
+    return;
+  }
+
+  try {
+    const data = createLinkCode(userId, channel);
+    sendOk(res, {
+      status: 'created',
+      channel,
+      code: data.code,
+      expiresAt: data.expiresAt,
+      expiresInSeconds: data.expiresInSeconds,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to create link code.';
+    console.error(`[link-code-failed] userId=${userId} reason=${message}`);
+    sendError(res, 400, 'LINK_CODE_FAILED', 'Unable to create link code.');
+  }
 });
 
 messagesRouter.post('/messages/send', async (req, res) => {
   const userId = String(req.body?.userId || '').trim();
-  const channel = String(req.body?.channel || '').trim();
+  const channel = String(req.body?.channel || '').trim().toLowerCase();
   const channels = Array.isArray(req.body?.channels)
-    ? req.body.channels.map((item) => String(item || '').trim()).filter(Boolean)
+    ? req.body.channels.map((item) => String(item || '').trim().toLowerCase()).filter(Boolean)
     : [];
   const text = String(req.body?.text || '').trim();
 
-  if (!userId) {
-    res.status(400).json({ error: 'userId is required.' });
-    return;
-  }
-
-  const validSingle = ['line', 'telegram', 'email', 'whatsapp', 'both', 'telegram_email', 'line_whatsapp'];
-  const validMulti = ['line', 'telegram', 'email', 'whatsapp'];
-
-  if (!channel && channels.length === 0) {
-    res.status(400).json({ error: 'channel or channels is required.' });
-    return;
-  }
-
-  if (channel && !validSingle.includes(channel)) {
-    res.status(400).json({ error: 'channel must be line, telegram, email, whatsapp, both, telegram_email, or line_whatsapp.' });
-    return;
-  }
-
-  if (channels.length > 0 && channels.some((item) => !validMulti.includes(item))) {
-    res.status(400).json({ error: 'channels must only include line, telegram, email, or whatsapp.' });
+  if (!isValidUserId(userId)) {
+    sendError(res, 400, 'INVALID_USER_ID', 'userId must be 3-64 chars: letters, numbers, dot, underscore, or hyphen.');
     return;
   }
 
   if (!text) {
-    res.status(400).json({ error: 'text is required.' });
+    sendError(res, 400, 'TEXT_REQUIRED', 'text is required.');
+    return;
+  }
+
+  if (text.length > 1000) {
+    sendError(res, 400, 'TEXT_TOO_LONG', 'text must be 1000 characters or fewer.');
+    return;
+  }
+
+  if (!channel && channels.length === 0) {
+    sendError(res, 400, 'CHANNEL_REQUIRED', 'channel or channels is required.');
+    return;
+  }
+
+  const invalidSingle = channel && !['line', 'telegram', 'email'].includes(channel);
+  const invalidMulti = channels.some((item) => !['line', 'telegram', 'email'].includes(item));
+  if (invalidSingle || invalidMulti) {
+    sendError(res, 400, 'UNSUPPORTED_CHANNEL', 'Only line, telegram, or email channel is enabled in this mode.');
     return;
   }
 
@@ -84,9 +180,10 @@ messagesRouter.post('/messages/send', async (req, res) => {
       text,
     });
 
-    res.json(result);
+    sendOk(res, result);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Message dispatch failed.';
-    res.status(400).json({ error: message });
+    console.error(`[dispatch-failed] userId=${userId} reason=${message}`);
+    sendError(res, 400, 'DISPATCH_FAILED', 'Message dispatch failed.');
   }
 });

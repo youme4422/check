@@ -10,14 +10,12 @@ export type Contact = {
 
 export type MessengerChannels = {
   line: boolean;
-  whatsapp: boolean;
   telegram: boolean;
   email: boolean;
 };
 
 export type MessengerLinks = {
   lineUserId: string;
-  whatsappId: string;
   telegramId: string;
   email: string;
 };
@@ -46,13 +44,11 @@ export const DEFAULT_APP_STATE: AppState = {
   contacts: [],
   messengerChannels: {
     line: false,
-    whatsapp: false,
     telegram: false,
     email: false,
   },
   messengerLinks: {
     lineUserId: '',
-    whatsappId: '',
     telegramId: '',
     email: '',
   },

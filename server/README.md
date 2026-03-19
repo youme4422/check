@@ -1,14 +1,52 @@
-# Check Messenger Server
+# LINE + Telegram + Email Deadman Backend (Node.js)
 
-This Node.js API server receives message requests from the Expo app and forwards them to LINE Messaging API, Telegram Bot API, SMTP email, and WhatsApp Cloud API.
+This backend currently supports:
+- LINE bot delivery
+- Telegram bot delivery
+- Email delivery (Resend or SMTP)
+- API key auth
+- rate limiting
+- per-user cooldown
 
-## Setup
+## Environment
 
-1. Copy `.env.example` to `.env`
-2. Fill in your real LINE / Telegram / SMTP / WhatsApp settings
-3. Set message cooldown if needed (`MESSAGE_COOLDOWN_MINUTES`)
-4. Install dependencies
-5. Start the server
+Create `server/.env`:
+
+```env
+PORT=4000
+SERVER_API_KEY=replace_with_strong_api_key
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+TELEGRAM_WEBHOOK_SECRET=your_telegram_webhook_secret
+LINE_CHANNEL_ACCESS_TOKEN=
+LINE_CHANNEL_SECRET=
+MESSAGE_COOLDOWN_MINUTES=60
+SAFETY_MARGIN_MESSAGES=10
+FREE_LIMIT_TELEGRAM_PER_MONTH=0
+FREE_LIMIT_LINE_PER_MONTH=200
+FREE_LIMIT_EMAIL_PER_MONTH=3000
+RATE_LIMIT_WINDOW_SECONDS=60
+RATE_LIMIT_PER_IP=120
+RATE_LIMIT_PER_USER=60
+
+# Optional email (Resend recommended)
+RESEND_API_KEY=your_resend_api_key
+RESEND_FROM_EMAIL=
+
+# Optional email (SMTP fallback)
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=
+```
+
+Monthly quota rule:
+- Effective auto-send quota is `FREE_LIMIT_*_PER_MONTH - SAFETY_MARGIN_MESSAGES`
+- Example: LINE `200 - 10 = 190`, Email `3000 - 10 = 2990`
+- `FREE_LIMIT_TELEGRAM_PER_MONTH=0` means unlimited (no quota cap)
+
+## Run
 
 ```powershell
 Set-Location "C:\Users\jan26\check\server"
@@ -16,55 +54,87 @@ npm install
 npm run dev
 ```
 
-## API
+## API Auth
 
-- `POST /api/users/:userId/messenger-links`
-- `POST /api/messages/send`
+All `/api/*` requests require:
+- `x-api-key: <SERVER_API_KEY>`
+or
+- `Authorization: Bearer <SERVER_API_KEY>`
 
-### Link recipients
+## Link LINE / Telegram (easy mode)
+
+1. App calls:
+`POST /api/users/:userId/link-codes`
+
+```json
+{ "channel": "telegram" }
+```
+or
+```json
+{ "channel": "line" }
+```
+
+2. User sends to Telegram bot:
+`LINK <code>`
+
+3. Webhook endpoints:
+`POST /telegram/webhook`
+`POST /line/webhook`
+
+For Telegram webhook security, set a secret token when registering webhook and use the same value in `TELEGRAM_WEBHOOK_SECRET`.
+
+## Register email
 
 `POST /api/users/:userId/messenger-links`
 
 ```json
-{
-  "telegramChatId": "12345678",
-  "email": "alert@example.com",
-  "whatsappTo": "+821012345678"
-}
+{ "email": "alert@example.com" }
 ```
 
-### Send message
+Email send priority:
+1. Resend (`RESEND_API_KEY` + `RESEND_FROM_EMAIL`)
+2. SMTP fallback (`SMTP_*`)
+
+## Send alert
 
 `POST /api/messages/send`
 
 ```json
 {
   "userId": "demo-user",
-  "channel": "telegram_email",
+  "channels": ["line", "telegram", "email"],
   "text": "Deadman switch alert: check-in missed."
 }
 ```
 
-You can also use channel `line_whatsapp` to deliver to both LINE and WhatsApp in one request.
-
-### Send cooldown (rate limit)
-
-- `MESSAGE_COOLDOWN_MINUTES` controls how often one user can send.
-- Example: `60` means each `userId` can send at most once per 60 minutes.
-- If blocked, API returns:
+## Cooldown response
 
 ```json
 {
+  "ok": true,
   "status": "rate_limited",
   "deliveredChannels": [],
-  "retryAfterSeconds": 1234
+  "retryAfter": 1234
 }
 ```
 
-## Notes
+## Quota limited response
 
-- This starter stores linked messenger IDs in memory. Replace the store with a database before production use.
-- LINE requires a valid recipient user ID that can receive push messages from your official account.
-- Telegram requires the user to start the bot first so the bot can send messages to that chat.
-- Email sending uses SMTP credentials from `.env`.
-- WhatsApp sending uses Meta WhatsApp Cloud API (`WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`).
+```json
+{
+  "ok": true,
+  "status": "quota_limited",
+  "deliveredChannels": [],
+  "blockedChannels": [
+    {
+      "channel": "line",
+      "reason": "monthly_quota_exceeded",
+      "limit": 190,
+      "used": 190,
+      "remaining": 0,
+      "resetAt": 1764547200000
+    }
+  ],
+  "retryAfter": 123456
+}
+```

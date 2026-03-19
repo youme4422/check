@@ -26,9 +26,38 @@ function getTransporter() {
   return transporter;
 }
 
-export async function sendEmailMessage({ to, text }) {
-  const client = getTransporter();
+async function sendWithResend({ to, text }) {
+  if (!env.resendApiKey || !env.resendFromEmail) {
+    throw new Error('RESEND_API_KEY or RESEND_FROM_EMAIL is missing.');
+  }
 
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.resendApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: env.resendFromEmail,
+      to: [to],
+      subject: 'TaeB missed check-in alert',
+      text,
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Resend send failed: ${detail || response.status}`);
+  }
+}
+
+export async function sendEmailMessage({ to, text }) {
+  if (env.resendApiKey && env.resendFromEmail) {
+    await sendWithResend({ to, text });
+    return { channel: 'email' };
+  }
+
+  const client = getTransporter();
   await client.sendMail({
     from: env.smtpFrom,
     to,

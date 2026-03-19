@@ -78,27 +78,13 @@ export async function syncScheduledNotifications(args: ScheduleArgs) {
     await Notifications.setNotificationChannelAsync(ANDROID_NOTIFICATION_CHANNEL_ID, {
       name: dictionary.notifications.channelName,
       importance: Notifications.AndroidImportance.HIGH,
+      enableVibrate: true,
+      vibrationPattern: [0, 300, 150, 300],
     });
   }
 
   const deadline = new Date(args.lastCheckInAt).getTime() + args.intervalHours * 60 * 60 * 1000;
-  const reminder = deadline - 2 * 60 * 60 * 1000;
   const now = Date.now();
-
-  if (reminder > now) {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: dictionary.notifications.reminderTitle,
-        body: dictionary.notifications.reminderBody,
-        sound: true,
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: new Date(reminder),
-        channelId: Platform.OS === 'android' ? ANDROID_NOTIFICATION_CHANNEL_ID : undefined,
-      },
-    });
-  }
 
   if (deadline > now) {
     await Notifications.scheduleNotificationAsync({

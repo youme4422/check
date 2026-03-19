@@ -1,17 +1,31 @@
 import 'dotenv/config';
 
+function parseNumber(raw, fallback) {
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 export const env = {
-  port: Number(process.env.PORT || 4000),
+  port: parseNumber(process.env.PORT, 4000),
+  serverApiKey: String(process.env.SERVER_API_KEY || '').trim(),
   lineChannelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || '',
+  lineChannelSecret: process.env.LINE_CHANNEL_SECRET || '',
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
+  telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET || '',
+  resendApiKey: process.env.RESEND_API_KEY || '',
+  resendFromEmail: process.env.RESEND_FROM_EMAIL || '',
   smtpHost: process.env.SMTP_HOST || '',
-  smtpPort: Number(process.env.SMTP_PORT || 587),
+  smtpPort: parseNumber(process.env.SMTP_PORT, 587),
   smtpSecure: String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true',
   smtpUser: process.env.SMTP_USER || '',
   smtpPass: process.env.SMTP_PASS || '',
   smtpFrom: process.env.SMTP_FROM || '',
-  whatsappToken: process.env.WHATSAPP_TOKEN || '',
-  whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
-  whatsappApiBase: process.env.WHATSAPP_API_BASE || 'https://graph.facebook.com/v22.0',
-  messageCooldownMinutes: Math.max(0, Number(process.env.MESSAGE_COOLDOWN_MINUTES || 60)),
+  messageCooldownMinutes: Math.max(0, parseNumber(process.env.MESSAGE_COOLDOWN_MINUTES, 60)),
+  safetyMarginMessages: Math.max(0, parseNumber(process.env.SAFETY_MARGIN_MESSAGES, 10)),
+  freeLimitTelegramPerMonth: Math.max(0, parseNumber(process.env.FREE_LIMIT_TELEGRAM_PER_MONTH, 0)),
+  freeLimitLinePerMonth: Math.max(0, parseNumber(process.env.FREE_LIMIT_LINE_PER_MONTH, 200)),
+  freeLimitEmailPerMonth: Math.max(0, parseNumber(process.env.FREE_LIMIT_EMAIL_PER_MONTH, 3000)),
+  rateLimitPerIp: Math.max(1, parseNumber(process.env.RATE_LIMIT_PER_IP, 120)),
+  rateLimitPerUser: Math.max(1, parseNumber(process.env.RATE_LIMIT_PER_USER, 60)),
+  rateLimitWindowSeconds: Math.max(1, parseNumber(process.env.RATE_LIMIT_WINDOW_SECONDS, 60)),
 };

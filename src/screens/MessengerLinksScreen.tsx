@@ -1,227 +1,202 @@
-import { Alert, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Linking, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useEffect, useState } from 'react';
 
 import { AppButton } from '../components/AppButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { SectionCard } from '../components/SectionCard';
 import { useI18n } from '../i18n/I18nProvider';
-import { linkRecipients } from '../services/messengerApi';
+import { createMessengerLinkCode, linkRecipients } from '../services/messengerApi';
+import { copyText } from '../storage/copy';
 import { useAppState } from '../storage/AppStateContext';
 import { useAppTheme } from '../theme/ThemeProvider';
 
 type FormState = {
-  accountId: string;
-  line: boolean;
-  whatsapp: boolean;
-  telegram: boolean;
-  email: boolean;
-  lineUserId: string;
-  whatsappId: string;
-  telegramId: string;
-  emailValue: string;
+  lineEnabled: boolean;
+  telegramEnabled: boolean;
+  emailEnabled: boolean;
+  email: string;
 };
+
+const TELEGRAM_BOT_USERNAME = 'TaeB_Aiert_Bot';
+const TELEGRAM_WEB_URL = `https://t.me/${TELEGRAM_BOT_USERNAME}`;
+const LINE_WEB_URL = 'https://line.me';
 
 export function MessengerLinksScreen() {
   const { t } = useI18n();
   const { theme } = useAppTheme();
-  const {
-    accountId,
-    messengerChannels,
-    messengerLinks,
-    setAccountIdSetting,
-    setMessengerChannelsSetting,
-    setMessengerLinksSetting,
-  } = useAppState();
+  const { accountId, messengerChannels, messengerLinks, setMessengerChannelsSetting, setMessengerLinksSetting } = useAppState();
   const [form, setForm] = useState<FormState>({
-    accountId: '',
-    line: false,
-    whatsapp: false,
-    telegram: false,
-    email: false,
-    lineUserId: '',
-    whatsappId: '',
-    telegramId: '',
-    emailValue: '',
+    lineEnabled: false,
+    telegramEnabled: false,
+    emailEnabled: false,
+    email: '',
   });
 
   useEffect(() => {
     setForm({
-      accountId,
-      line: messengerChannels.line,
-      whatsapp: messengerChannels.whatsapp,
-      telegram: messengerChannels.telegram,
-      email: messengerChannels.email,
-      lineUserId: messengerLinks.lineUserId,
-      whatsappId: messengerLinks.whatsappId,
-      telegramId: messengerLinks.telegramId,
-      emailValue: messengerLinks.email,
+      lineEnabled: messengerChannels.line,
+      telegramEnabled: messengerChannels.telegram,
+      emailEnabled: messengerChannels.email,
+      email: messengerLinks.email,
     });
-  }, [accountId, messengerChannels, messengerLinks]);
+  }, [messengerChannels.email, messengerChannels.line, messengerChannels.telegram, messengerLinks.email]);
+
+  const openWithFallbacks = async (urls: string[], appLabel: string) => {
+    for (const url of urls) {
+      try {
+        await Linking.openURL(url);
+        return true;
+      } catch {
+        // Try next.
+      }
+    }
+
+    Alert.alert('Open failed', `Could not open ${appLabel}.`);
+    return false;
+  };
+
+  const openTelegram = (code?: string) => {
+    const startCode = code ? encodeURIComponent(code) : '';
+    const deepLink = startCode
+      ? `tg://resolve?domain=${TELEGRAM_BOT_USERNAME}&start=${startCode}`
+      : `tg://resolve?domain=${TELEGRAM_BOT_USERNAME}`;
+    const webLink = startCode ? `${TELEGRAM_WEB_URL}?start=${startCode}` : TELEGRAM_WEB_URL;
+    return openWithFallbacks([deepLink, webLink], 'Telegram');
+  };
+
+  const openLine = () => {
+    return openWithFallbacks(['line://', LINE_WEB_URL], 'LINE');
+  };
+
+  const quickConnect = async (channel: 'line' | 'telegram') => {
+    const normalizedAccountId = accountId.trim();
+    if (!normalizedAccountId) {
+      Alert.alert('Account ID is missing', 'Please restart the app and try again.');
+      return;
+    }
+
+    try {
+      const result = await createMessengerLinkCode({
+        accountId: normalizedAccountId,
+        channel,
+      });
+
+      const command = `LINK ${result.code}`;
+      const copied = await copyText(command);
+      const opened = channel === 'line' ? await openLine() : await openTelegram(result.code);
+      if (!opened) {
+        return;
+      }
+
+      Alert.alert(
+        'Ready',
+        copied
+          ? `Paste and send this in bot chat:\n${command}`
+          : `Send this in bot chat:\n${command}`
+      );
+    } catch {
+      Alert.alert('Failed', 'Could not create link code. Check server connection.');
+    }
+  };
 
   const handleSave = async () => {
-    const normalizedAccountId = form.accountId.trim();
-
+    const normalizedAccountId = accountId.trim();
     if (!normalizedAccountId) {
-      Alert.alert('확인', '계정 ID를 입력해 주세요.');
+      Alert.alert('Please try again');
+      return;
+    }
+
+    if (!form.lineEnabled && !form.telegramEnabled && !form.emailEnabled) {
+      Alert.alert('Select at least one channel');
+      return;
+    }
+
+    if (form.emailEnabled && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      Alert.alert('Please check email format');
       return;
     }
 
     await Promise.all([
-      setAccountIdSetting(normalizedAccountId),
       setMessengerChannelsSetting({
-        line: form.line,
-        whatsapp: form.whatsapp,
-        telegram: form.telegram,
-        email: form.email,
+        line: form.lineEnabled,
+        telegram: form.telegramEnabled,
+        email: form.emailEnabled,
       }),
       setMessengerLinksSetting({
-        lineUserId: form.lineUserId,
-        whatsappId: form.whatsappId,
-        telegramId: form.telegramId,
-        email: form.emailValue,
+        lineUserId: messengerLinks.lineUserId,
+        telegramId: messengerLinks.telegramId,
+        email: form.email.trim(),
       }),
     ]);
 
-    try {
-      await linkRecipients({
-        accountId: normalizedAccountId,
-        lineUserId: form.line && form.lineUserId.trim() ? form.lineUserId : '',
-        telegramChatId: form.telegram && form.telegramId.trim() ? form.telegramId : '',
-        email: form.email && form.emailValue.trim() ? form.emailValue : '',
-        whatsappTo: form.whatsapp && form.whatsappId.trim() ? form.whatsappId : '',
-      });
-      Alert.alert('저장 완료', '메신저 설정이 저장되고 서버에 등록되었습니다.');
-    } catch {
-      Alert.alert('저장됨', '앱에는 저장됐지만 서버 등록은 실패했습니다. 서버 주소/상태를 확인해 주세요.');
+    if (form.emailEnabled) {
+      try {
+        await linkRecipients({
+          accountId: normalizedAccountId,
+          lineUserId: '',
+          telegramChatId: '',
+          email: form.email.trim(),
+        });
+      } catch {
+        Alert.alert('Saved locally', 'Email sync to server failed. Check server URL/status.');
+        return;
+      }
     }
+
+    Alert.alert('Saved', 'Settings saved.');
   };
 
   return (
     <ScreenContainer>
       <SectionCard>
         <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('settings.messengerLabel')}</Text>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>계정 및 채널</Text>
-
-        <Text style={[styles.label, { color: theme.mutedText }]}>계정 ID</Text>
-        <TextInput
-          value={form.accountId}
-          onChangeText={(value) => setForm((current) => ({ ...current, accountId: value }))}
-          placeholder="예: my-account-01"
-          style={[styles.input, { borderColor: theme.border, backgroundColor: theme.input, color: theme.text }]}
-          placeholderTextColor="#8A9A92"
-          autoCapitalize="none"
-        />
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Simple connect</Text>
 
         <View style={styles.switchRow}>
-          <Text style={[styles.switchLabel, { color: theme.text }]}>{t('settings.messengerLine')}</Text>
+          <Text style={[styles.switchLabel, { color: theme.text }]}>LINE</Text>
           <Switch
-            value={form.line}
-            onValueChange={(value) => setForm((current) => ({ ...current, line: value }))}
+            value={form.lineEnabled}
+            onValueChange={(value) => setForm((current) => ({ ...current, lineEnabled: value }))}
             trackColor={{ false: theme.border, true: theme.secondary }}
-            thumbColor={form.line ? theme.primary : theme.card}
+            thumbColor={form.lineEnabled ? theme.primary : theme.card}
           />
         </View>
+        {form.lineEnabled ? <AppButton label="Connect LINE" onPress={() => void quickConnect('line')} /> : null}
 
         <View style={styles.switchRow}>
-          <Text style={[styles.switchLabel, { color: theme.text }]}>{t('settings.messengerWhatsApp')}</Text>
+          <Text style={[styles.switchLabel, { color: theme.text }]}>Telegram</Text>
           <Switch
-            value={form.whatsapp}
-            onValueChange={(value) => setForm((current) => ({ ...current, whatsapp: value }))}
+            value={form.telegramEnabled}
+            onValueChange={(value) => setForm((current) => ({ ...current, telegramEnabled: value }))}
             trackColor={{ false: theme.border, true: theme.secondary }}
-            thumbColor={form.whatsapp ? theme.primary : theme.card}
+            thumbColor={form.telegramEnabled ? theme.primary : theme.card}
           />
         </View>
+        {form.telegramEnabled ? <AppButton label="Connect Telegram" onPress={() => void quickConnect('telegram')} /> : null}
 
         <View style={styles.switchRow}>
-          <Text style={[styles.switchLabel, { color: theme.text }]}>{t('settings.messengerTelegram')}</Text>
+          <Text style={[styles.switchLabel, { color: theme.text }]}>Email</Text>
           <Switch
-            value={form.telegram}
-            onValueChange={(value) => setForm((current) => ({ ...current, telegram: value }))}
+            value={form.emailEnabled}
+            onValueChange={(value) => setForm((current) => ({ ...current, emailEnabled: value }))}
             trackColor={{ false: theme.border, true: theme.secondary }}
-            thumbColor={form.telegram ? theme.primary : theme.card}
+            thumbColor={form.emailEnabled ? theme.primary : theme.card}
           />
         </View>
-
-        <View style={styles.switchRow}>
-          <Text style={[styles.switchLabel, { color: theme.text }]}>{t('settings.messengerEmail')}</Text>
-          <Switch
+        {form.emailEnabled ? (
+          <TextInput
             value={form.email}
-            onValueChange={(value) => setForm((current) => ({ ...current, email: value }))}
-            trackColor={{ false: theme.border, true: theme.secondary }}
-            thumbColor={form.email ? theme.primary : theme.card}
+            onChangeText={(value) => setForm((current) => ({ ...current, email: value }))}
+            placeholder="alert@example.com"
+            style={[styles.input, { borderColor: theme.border, backgroundColor: theme.input, color: theme.text }]}
+            placeholderTextColor="#8A9A92"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            inputMode="email"
           />
-        </View>
-      </SectionCard>
-
-      <SectionCard>
-        <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('settings.messengerLabel')}</Text>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>수신 대상 등록</Text>
-
-        {form.line ? (
-          <>
-            <Text style={[styles.label, { color: theme.mutedText }]}>LINE User ID</Text>
-            <TextInput
-              value={form.lineUserId}
-              onChangeText={(value) => setForm((current) => ({ ...current, lineUserId: value }))}
-              placeholder="예: Uxxxxxxxxxxxx"
-              style={[styles.input, { borderColor: theme.border, backgroundColor: theme.input, color: theme.text }]}
-              placeholderTextColor="#8A9A92"
-              autoCapitalize="none"
-            />
-          </>
         ) : null}
 
-        {form.whatsapp ? (
-          <>
-            <Text style={[styles.label, { color: theme.mutedText }]}>WhatsApp Number</Text>
-            <TextInput
-              value={form.whatsappId}
-              onChangeText={(value) => setForm((current) => ({ ...current, whatsappId: value }))}
-              placeholder="예: +821012345678"
-              style={[styles.input, { borderColor: theme.border, backgroundColor: theme.input, color: theme.text }]}
-              placeholderTextColor="#8A9A92"
-              autoCapitalize="none"
-            />
-          </>
-        ) : null}
-
-        {form.telegram ? (
-          <>
-            <Text style={[styles.label, { color: theme.mutedText }]}>Telegram Chat ID</Text>
-            <TextInput
-              value={form.telegramId}
-              onChangeText={(value) => setForm((current) => ({ ...current, telegramId: value }))}
-              placeholder="예: 123456789"
-              style={[styles.input, { borderColor: theme.border, backgroundColor: theme.input, color: theme.text }]}
-              placeholderTextColor="#8A9A92"
-              autoCapitalize="none"
-            />
-          </>
-        ) : null}
-
-        {form.email ? (
-          <>
-            <Text style={[styles.label, { color: theme.mutedText }]}>Email</Text>
-            <TextInput
-              value={form.emailValue}
-              onChangeText={(value) => setForm((current) => ({ ...current, emailValue: value }))}
-              placeholder="예: hello@example.com"
-              style={[styles.input, { borderColor: theme.border, backgroundColor: theme.input, color: theme.text }]}
-              placeholderTextColor="#8A9A92"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              inputMode="email"
-            />
-          </>
-        ) : null}
-
-        {!form.line && !form.whatsapp && !form.telegram && !form.email ? (
-          <Text style={[styles.helper, { color: theme.mutedText }]}>
-            채널을 활성화하면 아래에 수신 대상 입력칸이 표시됩니다.
-          </Text>
-        ) : null}
-
-        <AppButton label="저장" onPress={() => void handleSave()} />
+        <AppButton label="Save" onPress={() => void handleSave()} />
       </SectionCard>
     </ScreenContainer>
   );
@@ -250,22 +225,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  label: {
-    marginTop: 12,
-    marginBottom: 6,
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
   input: {
     borderWidth: 1,
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
-  },
-  helper: {
     marginTop: 8,
-    lineHeight: 22,
   },
 });

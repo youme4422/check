@@ -228,7 +228,6 @@ function normalizeContacts(contacts: AppState['contacts']) {
 function normalizeMessengerChannels(value: AppState['messengerChannels']) {
   return {
     line: Boolean(value?.line),
-    whatsapp: Boolean(value?.whatsapp),
     telegram: Boolean(value?.telegram),
     email: Boolean(value?.email),
   };
@@ -237,7 +236,6 @@ function normalizeMessengerChannels(value: AppState['messengerChannels']) {
 function normalizeMessengerLinks(value: AppState['messengerLinks']) {
   return {
     lineUserId: String(value?.lineUserId ?? '').trim().slice(0, 128),
-    whatsappId: String(value?.whatsappId ?? '').trim().slice(0, 64),
     telegramId: String(value?.telegramId ?? '').trim().slice(0, 64),
     email: String(value?.email ?? '').trim().toLowerCase().slice(0, 120),
   };
