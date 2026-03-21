@@ -1,4 +1,16 @@
+import * as Clipboard from 'expo-clipboard';
+
 export async function copyText(value: string) {
+  try {
+    await Clipboard.setStringAsync(value);
+    const verify = await Clipboard.getStringAsync();
+    if (verify === value) {
+      return true;
+    }
+  } catch {
+    // Fall through to web clipboard fallback.
+  }
+
   const clipboard = (
     globalThis as typeof globalThis & {
       navigator?: {
@@ -13,6 +25,10 @@ export async function copyText(value: string) {
     return false;
   }
 
-  await clipboard.writeText(value);
-  return true;
+  try {
+    await clipboard.writeText(value);
+    return true;
+  } catch {
+    return false;
+  }
 }

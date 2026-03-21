@@ -1,14 +1,14 @@
-import { ActivityIndicator, Alert, Linking, Platform, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useEffect, useState } from 'react';
 
 import { AppButton } from '../components/AppButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { SectionCard } from '../components/SectionCard';
-import { LINE_OFFICIAL_ACCOUNT_ID } from '../config/appConfig';
 import { useI18n } from '../i18n/I18nProvider';
 import { createMessengerLinkCode, getMessengerLinks, linkRecipients } from '../services/messengerApi';
 import { copyText } from '../storage/copy';
 import { useAppState } from '../storage/AppStateContext';
+import type { Locale } from '../storage/types';
 import { useAppTheme } from '../theme/ThemeProvider';
 
 type FormState = {
@@ -19,20 +19,21 @@ type FormState = {
 };
 
 const TELEGRAM_BOT_USERNAME = 'TaeB_Aiert_Bot';
-const TELEGRAM_WEB_URL = `https://t.me/${TELEGRAM_BOT_USERNAME}`;
-const LINE_WEB_URL = 'https://line.me';
 
 export function MessengerLinksScreen() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { theme } = useAppTheme();
   const { accountId, messengerChannels, messengerLinks, setMessengerChannelsSetting, setMessengerLinksSetting } = useAppState();
   const [isCheckingLinks, setIsCheckingLinks] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState<{ line: string; telegram: string }>({ line: '', telegram: '' });
   const [form, setForm] = useState<FormState>({
     lineEnabled: false,
     telegramEnabled: false,
     emailEnabled: false,
     email: '',
   });
+
+  const ui = getMessengerUiText(locale);
 
   useEffect(() => {
     setForm({
@@ -43,94 +44,7 @@ export function MessengerLinksScreen() {
     });
   }, [messengerChannels.email, messengerChannels.line, messengerChannels.telegram, messengerLinks.email]);
 
-  const openWithFallbacks = async (urls: string[], appLabel: string) => {
-    for (const url of urls) {
-      try {
-        await Linking.openURL(url);
-        return true;
-      } catch {
-        // Try next fallback.
-      }
-    }
-
-    Alert.alert(t('messenger.openFailedTitle'), t('messenger.openFailedBody', { app: appLabel }));
-    return false;
-  };
-
-  const openTelegram = (code?: string) => {
-    const startCode = code ? encodeURIComponent(code) : '';
-    const deepLink = startCode
-      ? `tg://resolve?domain=${TELEGRAM_BOT_USERNAME}&start=${startCode}`
-      : `tg://resolve?domain=${TELEGRAM_BOT_USERNAME}`;
-    const webLink = startCode ? `${TELEGRAM_WEB_URL}?start=${startCode}` : TELEGRAM_WEB_URL;
-    return openWithFallbacks([deepLink, webLink], 'Telegram');
-  };
-
-  const openLine = (code?: string) => {
-    const officialIdRaw = LINE_OFFICIAL_ACCOUNT_ID.trim();
-    const officialId = officialIdRaw ? (officialIdRaw.startsWith('@') ? officialIdRaw : `@${officialIdRaw}`) : '';
-    const command = code ? `LINK ${code}` : '';
-    const encodedCommand = command ? encodeURIComponent(command) : '';
-
-    if (officialId) {
-      const urls =
-        Platform.OS === 'android'
-          ? [
-              `line://ti/p/${officialId}`,
-              ...(encodedCommand ? [`https://line.me/R/msg/text/?${encodedCommand}`] : []),
-              `intent://ti/p/${officialId}#Intent;scheme=line;package=jp.naver.line.android;end`,
-              encodedCommand
-                ? `https://line.me/R/oaMessage/${officialId}/?${encodedCommand}`
-                : `https://line.me/R/ti/p/${officialId}`,
-              `https://line.me/R/ti/p/${officialId}`,
-            ]
-          : [
-              `line://ti/p/${officialId}`,
-              ...(encodedCommand ? [`https://line.me/R/msg/text/?${encodedCommand}`] : []),
-              encodedCommand
-                ? `https://line.me/R/oaMessage/${officialId}/?${encodedCommand}`
-                : `https://line.me/R/ti/p/${officialId}`,
-              `https://line.me/R/ti/p/${officialId}`,
-            ];
-      return openWithFallbacks(urls, 'LINE');
-    }
-
-    return openWithFallbacks([LINE_WEB_URL], 'LINE');
-  };
-
-  const pollRecipientLink = async (channel: 'line' | 'telegram') => {
-    const normalizedAccountId = accountId.trim();
-    if (!normalizedAccountId) {
-      return;
-    }
-
-    setIsCheckingLinks(true);
-    try {
-      for (let attempt = 0; attempt < 8; attempt += 1) {
-        await new Promise((resolve) => setTimeout(resolve, 2500));
-        const links = await getMessengerLinks(normalizedAccountId);
-        const linked = channel === 'line' ? Boolean(links.lineUserId) : Boolean(links.telegramChatId);
-        if (!linked) {
-          continue;
-        }
-
-        await setMessengerLinksSetting({
-          lineUserId: links.lineUserId,
-          telegramId: links.telegramChatId,
-          email: links.email || form.email.trim(),
-        });
-
-        Alert.alert('Connected', channel === 'line' ? 'LINE recipient linked.' : 'Telegram recipient linked.');
-        return;
-      }
-    } catch {
-      // Ignore polling errors.
-    } finally {
-      setIsCheckingLinks(false);
-    }
-  };
-
-  const quickConnect = async (channel: 'line' | 'telegram') => {
+  const generateLinkCode = async (channel: 'line' | 'telegram') => {
     const normalizedAccountId = accountId.trim();
     if (!normalizedAccountId) {
       Alert.alert(t('messenger.accountIdMissingTitle'), t('messenger.accountIdMissingBody'));
@@ -143,26 +57,22 @@ export function MessengerLinksScreen() {
         channel,
       });
 
-      const command = `LINK ${result.code}`;
-      const copied = await copyText(command);
-      const opened = channel === 'line' ? await openLine(result.code) : await openTelegram(result.code);
-      if (!opened) {
-        return;
-      }
+      const code = result.code;
+      const copied = await copyText(code);
+      setGeneratedCode((current) => ({ ...current, [channel]: code }));
 
       Alert.alert(
-        t('messenger.readyTitle'),
+        ui.codeReadyTitle,
         copied
-          ? t('messenger.readyBodyCopied', { command })
-          : t('messenger.readyBody', { command })
+          ? ui.codeReadyCopiedBody(channel, TELEGRAM_BOT_USERNAME, code)
+          : ui.codeReadyBody(channel, TELEGRAM_BOT_USERNAME, code)
       );
-      void pollRecipientLink(channel);
     } catch {
       Alert.alert(t('messenger.failedTitle'), t('messenger.linkCodeFailedBody'));
     }
   };
 
-  const handleLoadRecipients = async () => {
+  const handleConnectChannel = async (channel: 'line' | 'telegram') => {
     const normalizedAccountId = accountId.trim();
     if (!normalizedAccountId) {
       Alert.alert(t('messenger.accountIdMissingTitle'), t('messenger.accountIdMissingBody'));
@@ -178,21 +88,38 @@ export function MessengerLinksScreen() {
         email: links.email || form.email.trim(),
       });
 
-      if (links.email && !form.email.trim()) {
-        setForm((current) => ({ ...current, email: links.email }));
+      const isConnected = channel === 'line' ? Boolean(links.lineUserId) : Boolean(links.telegramChatId);
+      if (isConnected) {
+        Alert.alert(ui.connectedTitle, channel === 'line' ? ui.connectedLineBody : ui.connectedTelegramBody);
+      } else {
+        Alert.alert(
+          ui.notConnectedTitle,
+          channel === 'line'
+            ? ui.notConnectedLineBody
+            : ui.notConnectedTelegramBody
+        );
       }
-
-      Alert.alert(
-        'Connection Status',
-        `LINE: ${links.lineUserId ? 'Connected' : 'Not connected'}\nTelegram: ${
-          links.telegramChatId ? 'Connected' : 'Not connected'
-        }`
-      );
     } catch {
-      Alert.alert('Load Failed', 'Could not load connection status from server.');
+      Alert.alert(ui.connectCheckFailedTitle, ui.connectCheckFailedBody);
     } finally {
       setIsCheckingLinks(false);
     }
+  };
+
+  const handleCopyCode = async (channel: 'line' | 'telegram') => {
+    const code = channel === 'line' ? generatedCode.line : generatedCode.telegram;
+    if (!code) {
+      Alert.alert(ui.noCodeTitle, ui.noCodeBody);
+      return;
+    }
+
+    const copied = await copyText(code);
+    if (copied) {
+      Alert.alert(ui.copiedTitle, ui.copiedBody);
+      return;
+    }
+
+    Alert.alert(ui.copyFailedTitle, ui.copyFailedBody);
   };
 
   const handleSave = async () => {
@@ -260,9 +187,29 @@ export function MessengerLinksScreen() {
         {form.lineEnabled ? (
           <View style={styles.channelBlock}>
             <Text style={[styles.helperText, { color: theme.mutedText }]}>
-              Status: {messengerLinks.lineUserId ? 'Connected' : 'Not connected'}
+              {ui.statusLabel}: {messengerLinks.lineUserId ? ui.connectedShort : ui.notConnectedShort}
             </Text>
-            <AppButton label={t('messenger.connectLineButton')} onPress={() => void quickConnect('line')} />
+            <AppButton label={ui.generateLineCodeButton} onPress={() => void generateLinkCode('line')} />
+            {generatedCode.line ? (
+              <View style={styles.codeBox}>
+                <Text style={[styles.codeLabel, { color: theme.mutedText }]}>{ui.codeLabel}</Text>
+                <Text selectable style={[styles.codeText, { color: theme.text }]}>
+                  {generatedCode.line}
+                </Text>
+                <AppButton
+                  label={ui.copyLineCodeButton}
+                  variant="secondary"
+                  onPress={() => {
+                    void handleCopyCode('line');
+                  }}
+                />
+                <AppButton
+                  label={isCheckingLinks ? ui.checkingButton : ui.checkLineConnectionButton}
+                  disabled={isCheckingLinks}
+                  onPress={() => void handleConnectChannel('line')}
+                />
+              </View>
+            ) : null}
           </View>
         ) : null}
 
@@ -278,9 +225,29 @@ export function MessengerLinksScreen() {
         {form.telegramEnabled ? (
           <View style={styles.channelBlock}>
             <Text style={[styles.helperText, { color: theme.mutedText }]}>
-              Status: {messengerLinks.telegramId ? 'Connected' : 'Not connected'}
+              {ui.statusLabel}: {messengerLinks.telegramId ? ui.connectedShort : ui.notConnectedShort}
             </Text>
-            <AppButton label={t('messenger.connectTelegramButton')} onPress={() => void quickConnect('telegram')} />
+            <AppButton label={ui.generateTelegramCodeButton} onPress={() => void generateLinkCode('telegram')} />
+            {generatedCode.telegram ? (
+              <View style={styles.codeBox}>
+                <Text style={[styles.codeLabel, { color: theme.mutedText }]}>{ui.codeLabel}</Text>
+                <Text selectable style={[styles.codeText, { color: theme.text }]}>
+                  {generatedCode.telegram}
+                </Text>
+                <AppButton
+                  label={ui.copyTelegramCodeButton}
+                  variant="secondary"
+                  onPress={() => {
+                    void handleCopyCode('telegram');
+                  }}
+                />
+                <AppButton
+                  label={isCheckingLinks ? ui.checkingButton : ui.checkTelegramConnectionButton}
+                  disabled={isCheckingLinks}
+                  onPress={() => void handleConnectChannel('telegram')}
+                />
+              </View>
+            ) : null}
           </View>
         ) : null}
 
@@ -309,14 +276,7 @@ export function MessengerLinksScreen() {
         ) : null}
 
         <View style={styles.actionButtons}>
-          <AppButton
-            label={isCheckingLinks ? 'Checking...' : 'Check connection status'}
-            onPress={() => void handleLoadRecipients()}
-            variant="secondary"
-            disabled={isCheckingLinks}
-          />
           {isCheckingLinks ? <ActivityIndicator size="small" color={theme.primary} style={styles.loader} /> : null}
-          <View style={styles.actionSpacer} />
           <AppButton label={t('messenger.saveButton')} onPress={() => void handleSave()} />
         </View>
       </SectionCard>
@@ -357,6 +317,25 @@ const styles = StyleSheet.create({
   channelBlock: {
     marginBottom: 8,
   },
+  codeBox: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 12,
+    borderColor: '#CFDBD5',
+    padding: 10,
+  },
+  codeText: {
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: 4,
+    textAlign: 'center',
+    letterSpacing: 2,
+  },
+  codeLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
   helperText: {
     fontSize: 13,
     fontWeight: '600',
@@ -373,3 +352,74 @@ const styles = StyleSheet.create({
     height: 8,
   },
 });
+
+function getMessengerUiText(locale: Locale) {
+  const byLocale = {
+    ko: {
+      codeReadyTitle: '코드 생성 완료',
+      codeReadyBody: (channel: 'line' | 'telegram', bot: string, code: string) =>
+        `${channel === 'line' ? 'LINE' : `Telegram (@${bot})`} 채팅에 아래 코드를 보내세요.\n${code}`,
+      codeReadyCopiedBody: (channel: 'line' | 'telegram', bot: string, code: string) =>
+        `코드가 복사되었습니다. ${channel === 'line' ? 'LINE' : `Telegram (@${bot})`} 채팅에 붙여넣어 보내세요.\n${code}`,
+      connectedTitle: '연결 완료',
+      connectedLineBody: 'LINE 연결이 확인되었습니다.',
+      connectedTelegramBody: 'Telegram 연결이 확인되었습니다.',
+      notConnectedTitle: '아직 연결되지 않음',
+      notConnectedLineBody: '생성한 코드를 LINE 채팅에 보낸 뒤 다시 연결 확인을 눌러주세요.',
+      notConnectedTelegramBody: '생성한 코드를 Telegram 채팅에 보낸 뒤 다시 연결 확인을 눌러주세요.',
+      connectCheckFailedTitle: '연결 확인 실패',
+      connectCheckFailedBody: '채널 연결 상태를 확인하지 못했습니다.',
+      noCodeTitle: '코드 없음',
+      noCodeBody: '먼저 코드를 생성해 주세요.',
+      copiedTitle: '복사 완료',
+      copiedBody: '코드가 클립보드에 복사되었습니다.',
+      copyFailedTitle: '복사 실패',
+      copyFailedBody: '코드를 길게 눌러 수동으로 복사해 주세요.',
+      statusLabel: '상태',
+      connectedShort: '연결됨',
+      notConnectedShort: '미연결',
+      generateLineCodeButton: 'LINE 코드 생성',
+      generateTelegramCodeButton: 'Telegram 코드 생성',
+      copyLineCodeButton: 'LINE 코드 복사',
+      copyTelegramCodeButton: 'Telegram 코드 복사',
+      checkLineConnectionButton: 'LINE 연결 확인',
+      checkTelegramConnectionButton: 'Telegram 연결 확인',
+      checkingButton: '확인 중...',
+      codeLabel: '코드',
+    },
+    en: {
+      codeReadyTitle: 'Code Ready',
+      codeReadyBody: (channel: 'line' | 'telegram', bot: string, code: string) =>
+        `Send this code in ${channel === 'line' ? 'LINE' : `Telegram (@${bot})`} chat.\n${code}`,
+      codeReadyCopiedBody: (channel: 'line' | 'telegram', bot: string, code: string) =>
+        `Code copied. Paste and send in ${channel === 'line' ? 'LINE' : `Telegram (@${bot})`} chat.\n${code}`,
+      connectedTitle: 'Connected',
+      connectedLineBody: 'LINE is connected.',
+      connectedTelegramBody: 'Telegram is connected.',
+      notConnectedTitle: 'Not connected yet',
+      notConnectedLineBody: 'Send the generated code in LINE chat, then check again.',
+      notConnectedTelegramBody: 'Send the generated code in Telegram chat, then check again.',
+      connectCheckFailedTitle: 'Connect check failed',
+      connectCheckFailedBody: 'Could not verify channel connection.',
+      noCodeTitle: 'No code',
+      noCodeBody: 'Please generate a code first.',
+      copiedTitle: 'Copied',
+      copiedBody: 'Code copied to clipboard.',
+      copyFailedTitle: 'Copy failed',
+      copyFailedBody: 'Tap and hold the code to copy manually.',
+      statusLabel: 'Status',
+      connectedShort: 'Connected',
+      notConnectedShort: 'Not connected',
+      generateLineCodeButton: 'Generate LINE code',
+      generateTelegramCodeButton: 'Generate Telegram code',
+      copyLineCodeButton: 'Copy LINE code',
+      copyTelegramCodeButton: 'Copy Telegram code',
+      checkLineConnectionButton: 'Check LINE connection',
+      checkTelegramConnectionButton: 'Check Telegram connection',
+      checkingButton: 'Checking...',
+      codeLabel: 'Code',
+    },
+  } as const;
+
+  return byLocale[locale === 'ko' ? 'ko' : 'en'];
+}
