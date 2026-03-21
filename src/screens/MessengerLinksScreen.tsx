@@ -1,11 +1,12 @@
-import { Alert, Linking, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useEffect, useState } from 'react';
 
 import { AppButton } from '../components/AppButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { SectionCard } from '../components/SectionCard';
+import { LINE_OFFICIAL_ACCOUNT_ID } from '../config/appConfig';
 import { useI18n } from '../i18n/I18nProvider';
-import { createMessengerLinkCode, linkRecipients } from '../services/messengerApi';
+import { createMessengerLinkCode, getMessengerLinks, linkRecipients } from '../services/messengerApi';
 import { copyText } from '../storage/copy';
 import { useAppState } from '../storage/AppStateContext';
 import { useAppTheme } from '../theme/ThemeProvider';
@@ -25,6 +26,7 @@ export function MessengerLinksScreen() {
   const { t } = useI18n();
   const { theme } = useAppTheme();
   const { accountId, messengerChannels, messengerLinks, setMessengerChannelsSetting, setMessengerLinksSetting } = useAppState();
+  const [isCheckingLinks, setIsCheckingLinks] = useState(false);
   const [form, setForm] = useState<FormState>({
     lineEnabled: false,
     telegramEnabled: false,
@@ -47,7 +49,7 @@ export function MessengerLinksScreen() {
         await Linking.openURL(url);
         return true;
       } catch {
-        // Try next.
+        // Try next fallback.
       }
     }
 
@@ -64,8 +66,68 @@ export function MessengerLinksScreen() {
     return openWithFallbacks([deepLink, webLink], 'Telegram');
   };
 
-  const openLine = () => {
-    return openWithFallbacks(['line://', LINE_WEB_URL], 'LINE');
+  const openLine = (code?: string) => {
+    const officialIdRaw = LINE_OFFICIAL_ACCOUNT_ID.trim();
+    const officialId = officialIdRaw ? (officialIdRaw.startsWith('@') ? officialIdRaw : `@${officialIdRaw}`) : '';
+    const command = code ? `LINK ${code}` : '';
+    const encodedCommand = command ? encodeURIComponent(command) : '';
+
+    if (officialId) {
+      const urls =
+        Platform.OS === 'android'
+          ? [
+              `line://ti/p/${officialId}`,
+              ...(encodedCommand ? [`https://line.me/R/msg/text/?${encodedCommand}`] : []),
+              `intent://ti/p/${officialId}#Intent;scheme=line;package=jp.naver.line.android;end`,
+              encodedCommand
+                ? `https://line.me/R/oaMessage/${officialId}/?${encodedCommand}`
+                : `https://line.me/R/ti/p/${officialId}`,
+              `https://line.me/R/ti/p/${officialId}`,
+            ]
+          : [
+              `line://ti/p/${officialId}`,
+              ...(encodedCommand ? [`https://line.me/R/msg/text/?${encodedCommand}`] : []),
+              encodedCommand
+                ? `https://line.me/R/oaMessage/${officialId}/?${encodedCommand}`
+                : `https://line.me/R/ti/p/${officialId}`,
+              `https://line.me/R/ti/p/${officialId}`,
+            ];
+      return openWithFallbacks(urls, 'LINE');
+    }
+
+    return openWithFallbacks([LINE_WEB_URL], 'LINE');
+  };
+
+  const pollRecipientLink = async (channel: 'line' | 'telegram') => {
+    const normalizedAccountId = accountId.trim();
+    if (!normalizedAccountId) {
+      return;
+    }
+
+    setIsCheckingLinks(true);
+    try {
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+        const links = await getMessengerLinks(normalizedAccountId);
+        const linked = channel === 'line' ? Boolean(links.lineUserId) : Boolean(links.telegramChatId);
+        if (!linked) {
+          continue;
+        }
+
+        await setMessengerLinksSetting({
+          lineUserId: links.lineUserId,
+          telegramId: links.telegramChatId,
+          email: links.email || form.email.trim(),
+        });
+
+        Alert.alert('Connected', channel === 'line' ? 'LINE recipient linked.' : 'Telegram recipient linked.');
+        return;
+      }
+    } catch {
+      // Ignore polling errors.
+    } finally {
+      setIsCheckingLinks(false);
+    }
   };
 
   const quickConnect = async (channel: 'line' | 'telegram') => {
@@ -83,7 +145,7 @@ export function MessengerLinksScreen() {
 
       const command = `LINK ${result.code}`;
       const copied = await copyText(command);
-      const opened = channel === 'line' ? await openLine() : await openTelegram(result.code);
+      const opened = channel === 'line' ? await openLine(result.code) : await openTelegram(result.code);
       if (!opened) {
         return;
       }
@@ -94,8 +156,42 @@ export function MessengerLinksScreen() {
           ? t('messenger.readyBodyCopied', { command })
           : t('messenger.readyBody', { command })
       );
+      void pollRecipientLink(channel);
     } catch {
       Alert.alert(t('messenger.failedTitle'), t('messenger.linkCodeFailedBody'));
+    }
+  };
+
+  const handleLoadRecipients = async () => {
+    const normalizedAccountId = accountId.trim();
+    if (!normalizedAccountId) {
+      Alert.alert(t('messenger.accountIdMissingTitle'), t('messenger.accountIdMissingBody'));
+      return;
+    }
+
+    setIsCheckingLinks(true);
+    try {
+      const links = await getMessengerLinks(normalizedAccountId);
+      await setMessengerLinksSetting({
+        lineUserId: links.lineUserId,
+        telegramId: links.telegramChatId,
+        email: links.email || form.email.trim(),
+      });
+
+      if (links.email && !form.email.trim()) {
+        setForm((current) => ({ ...current, email: links.email }));
+      }
+
+      Alert.alert(
+        'Connection Status',
+        `LINE: ${links.lineUserId ? 'Connected' : 'Not connected'}\nTelegram: ${
+          links.telegramChatId ? 'Connected' : 'Not connected'
+        }`
+      );
+    } catch {
+      Alert.alert('Load Failed', 'Could not load connection status from server.');
+    } finally {
+      setIsCheckingLinks(false);
     }
   };
 
@@ -125,11 +221,11 @@ export function MessengerLinksScreen() {
       setMessengerLinksSetting({
         lineUserId: messengerLinks.lineUserId,
         telegramId: messengerLinks.telegramId,
-        email: form.email.trim(),
+        email: form.emailEnabled ? form.email.trim() : '',
       }),
     ]);
 
-    if (form.emailEnabled) {
+    if (form.emailEnabled && form.email.trim()) {
       try {
         await linkRecipients({
           accountId: normalizedAccountId,
@@ -161,7 +257,14 @@ export function MessengerLinksScreen() {
             thumbColor={form.lineEnabled ? theme.primary : theme.card}
           />
         </View>
-        {form.lineEnabled ? <AppButton label={t('messenger.connectLineButton')} onPress={() => void quickConnect('line')} /> : null}
+        {form.lineEnabled ? (
+          <View style={styles.channelBlock}>
+            <Text style={[styles.helperText, { color: theme.mutedText }]}>
+              Status: {messengerLinks.lineUserId ? 'Connected' : 'Not connected'}
+            </Text>
+            <AppButton label={t('messenger.connectLineButton')} onPress={() => void quickConnect('line')} />
+          </View>
+        ) : null}
 
         <View style={styles.switchRow}>
           <Text style={[styles.switchLabel, { color: theme.text }]}>{t('messenger.telegramLabel')}</Text>
@@ -173,7 +276,12 @@ export function MessengerLinksScreen() {
           />
         </View>
         {form.telegramEnabled ? (
-          <AppButton label={t('messenger.connectTelegramButton')} onPress={() => void quickConnect('telegram')} />
+          <View style={styles.channelBlock}>
+            <Text style={[styles.helperText, { color: theme.mutedText }]}>
+              Status: {messengerLinks.telegramId ? 'Connected' : 'Not connected'}
+            </Text>
+            <AppButton label={t('messenger.connectTelegramButton')} onPress={() => void quickConnect('telegram')} />
+          </View>
         ) : null}
 
         <View style={styles.switchRow}>
@@ -186,19 +294,31 @@ export function MessengerLinksScreen() {
           />
         </View>
         {form.emailEnabled ? (
-          <TextInput
-            value={form.email}
-            onChangeText={(value) => setForm((current) => ({ ...current, email: value }))}
-            placeholder={t('messenger.emailPlaceholder')}
-            style={[styles.input, { borderColor: theme.border, backgroundColor: theme.input, color: theme.text }]}
-            placeholderTextColor="#8A9A92"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            inputMode="email"
-          />
+          <View style={styles.channelBlock}>
+            <TextInput
+              value={form.email}
+              onChangeText={(value) => setForm((current) => ({ ...current, email: value }))}
+              placeholder={t('messenger.emailPlaceholder')}
+              style={[styles.input, { borderColor: theme.border, backgroundColor: theme.input, color: theme.text }]}
+              placeholderTextColor="#8A9A92"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              inputMode="email"
+            />
+          </View>
         ) : null}
 
-        <AppButton label={t('messenger.saveButton')} onPress={() => void handleSave()} />
+        <View style={styles.actionButtons}>
+          <AppButton
+            label={isCheckingLinks ? 'Checking...' : 'Check connection status'}
+            onPress={() => void handleLoadRecipients()}
+            variant="secondary"
+            disabled={isCheckingLinks}
+          />
+          {isCheckingLinks ? <ActivityIndicator size="small" color={theme.primary} style={styles.loader} /> : null}
+          <View style={styles.actionSpacer} />
+          <AppButton label={t('messenger.saveButton')} onPress={() => void handleSave()} />
+        </View>
       </SectionCard>
     </ScreenContainer>
   );
@@ -233,5 +353,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginTop: 8,
+  },
+  channelBlock: {
+    marginBottom: 8,
+  },
+  helperText: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 2,
+    marginBottom: 4,
+  },
+  actionButtons: {
+    marginTop: 8,
+  },
+  loader: {
+    marginTop: 10,
+  },
+  actionSpacer: {
+    height: 8,
   },
 });

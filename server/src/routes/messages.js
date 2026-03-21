@@ -2,7 +2,7 @@ import { Router } from 'express';
 
 import { env } from '../config/env.js';
 import { dispatchMessage } from '../services/message.service.js';
-import { createLinkCode, saveMessengerLinks } from '../store/userStore.js';
+import { createLinkCode, getMessengerLinks, saveMessengerLinks } from '../store/userStore.js';
 import { sendError, sendOk } from '../utils/http.js';
 
 export const messagesRouter = Router();
@@ -21,6 +21,28 @@ messagesRouter.get('/config/status', (_req, res) => {
       },
     },
   });
+});
+
+messagesRouter.get('/users/:userId/messenger-links', async (req, res) => {
+  const userId = String(req.params.userId || '').trim();
+  if (!isValidUserId(userId)) {
+    sendError(res, 400, 'INVALID_USER_ID', 'userId must be 3-64 chars: letters, numbers, dot, underscore, or hyphen.');
+    return;
+  }
+
+  try {
+    const links = await getMessengerLinks(userId);
+    sendOk(res, {
+      userId,
+      lineUserId: String(links?.lineUserId || '').trim(),
+      telegramChatId: String(links?.telegramChatId || '').trim(),
+      email: String(links?.email || '').trim().toLowerCase(),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to load messenger links.';
+    console.error(`[messenger-links-load-failed] userId=${userId} reason=${message}`);
+    sendError(res, 500, 'MESSENGER_LINKS_LOAD_FAILED', 'Unable to load messenger links.');
+  }
 });
 
 function isValidUserId(value) {

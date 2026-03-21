@@ -26,6 +26,12 @@ type LinkCodeResponse = {
   expiresInSeconds: number;
 };
 
+type MessengerLinksResponse = {
+  lineUserId: string;
+  telegramChatId: string;
+  email: string;
+};
+
 export function isMessengerServerConfigured() {
   return Boolean(MESSENGER_SERVER_BASE_URL.trim() && MESSENGER_SERVER_API_KEY.trim());
 }
@@ -109,5 +115,29 @@ export async function createMessengerLinkCode(args: CreateLinkCodeArgs): Promise
     code: payload.code,
     expiresAt: payload.expiresAt,
     expiresInSeconds: payload.expiresInSeconds,
+  };
+}
+
+export async function getMessengerLinks(accountId: string): Promise<MessengerLinksResponse> {
+  const baseUrl = MESSENGER_SERVER_BASE_URL.trim();
+  if (!baseUrl) {
+    throw new Error('Messenger server URL is not configured.');
+  }
+
+  const response = await fetch(`${baseUrl}/api/users/${encodeURIComponent(accountId)}/messenger-links`, {
+    method: 'GET',
+    headers: buildAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(body || `Get links API failed: ${response.status}`);
+  }
+
+  const payload = (await response.json()) as Partial<MessengerLinksResponse>;
+  return {
+    lineUserId: String(payload.lineUserId || '').trim(),
+    telegramChatId: String(payload.telegramChatId || '').trim(),
+    email: String(payload.email || '').trim().toLowerCase(),
   };
 }
