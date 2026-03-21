@@ -1,0 +1,42 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Expo: Start App",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run start",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Expo: Start Android",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run android",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Expo: Start Web",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run web",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Server: Dev",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}\\server"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "App + Server",
+      "configurations": [
+        "Expo: Start App",
+        "Server: Dev"
+      ]
+    }
+  ]
+}

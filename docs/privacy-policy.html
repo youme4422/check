@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>개인정보처리방침 (TaeB)</title>
+    <meta
+      name="description"
+      content="TaeB 개인정보처리방침. 데이터는 기본적으로 기기에 로컬 저장되며, 사용자가 직접 실행한 SMS/이메일 기능 외 자동 전송을 하지 않습니다."
+    >
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4f7f5;
+        --card: #ffffff;
+        --text: #1e2a22;
+        --muted: #5a6a60;
+        --line: #d8e2da;
+        --accent: #1f7a5c;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: radial-gradient(circle at top right, rgba(31, 122, 92, 0.12), transparent 35%), var(--bg);
+        color: var(--text);
+        font-family: "Noto Sans KR", "Segoe UI", sans-serif;
+        line-height: 1.7;
+      }
+      .wrap { max-width: 860px; margin: 0 auto; padding: 28px 16px 56px; }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 24px 20px;
+        box-shadow: 0 10px 24px rgba(30, 42, 34, 0.06);
+      }
+      h1 { margin: 0 0 8px; font-size: clamp(1.7rem, 4vw, 2.2rem); }
+      h2 { margin: 24px 0 8px; font-size: 1.1rem; }
+      p, ul { margin: 0 0 12px; }
+      ul { padding-left: 20px; }
+      .muted { color: var(--muted); }
+      a { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="card">
+        <h1>개인정보처리방침 (TaeB)</h1>
+        <p class="muted">최종 업데이트: 2026-03-06</p>
+        <p>
+          TaeB는 체크인 기록과 긴급 연락처를 기기 내부에 저장해
+          체크인 상태 확인과 수동 연락(SMS/이메일 앱 열기)을 돕는 앱입니다.
+        </p>
+
+        <h2>1. 수집 및 저장 정보</h2>
+        <ul>
+          <li>체크인 시각/이력</li>
+          <li>사용자가 직접 입력한 긴급 연락처 정보(이름, 전화번호, 이메일)</li>
+          <li>앱 설정(체크인 주기, 알림 설정, 언어)</li>
+        </ul>
+        <p>모든 정보는 기본적으로 사용자 기기 로컬 저장소에 저장됩니다.</p>
+
+        <h2>2. 이용 목적</h2>
+        <ul>
+          <li>체크인 상태 및 이력 표시</li>
+          <li>사용자가 선택한 긴급 연락처로 빠른 연락 실행</li>
+          <li>로컬 알림 예약 및 표시</li>
+          <li>앱 설정 유지</li>
+        </ul>
+
+        <h2>3. 제3자 제공/외부 전송</h2>
+        <ul>
+          <li>앱은 사용자 데이터를 개발자 서버로 자동 전송하지 않습니다.</li>
+          <li>
+            사용자가 직접 <code>sms:</code> 또는 <code>mailto:</code> 기능을 실행하면,
+            해당 데이터가 기기의 SMS/이메일 앱으로 전달될 수 있습니다.
+          </li>
+          <li>메신저 자동 발송(LINE/Telegram 등) 기능은 현재 앱에서 사용하지 않습니다.</li>
+        </ul>
+
+        <h2>4. 권한</h2>
+        <ul>
+          <li><code>POST_NOTIFICATIONS</code>: 체크인 리마인더 알림 제공</li>
+        </ul>
+        <p>연락처 읽기, 위치, 통화 기록, 문자 읽기/자동 발송 권한은 사용하지 않습니다.</p>
+
+        <h2>5. 보관 및 삭제</h2>
+        <p>데이터는 기기 로컬에 보관되며, 앱 초기화 기능으로 삭제할 수 있습니다.</p>
+
+        <h2>6. 문의</h2>
+        <p><a href="mailto:younme040411@gmail.com">younme040411@gmail.com</a></p>
+      </section>
+    </main>
+  </body>
+</html>

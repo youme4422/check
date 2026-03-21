@@ -1,0 +1,19 @@
+{
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit",
+    "source.sortMembers": "explicit"
+  },
+  "github.copilot.enable": {
+    "*": true,
+    "plaintext": false,
+    "markdown": false
+  },
+  "editor.inlineSuggest.enabled": true,
+  "codeium.enableCodeLens": true,
+  "codeium.enableConfig": {
+    "*": true
+  },
+  "codeium.anotherCompletionDelay": 100,
+  "codeium.showCompletionsWithTab": true
+}
