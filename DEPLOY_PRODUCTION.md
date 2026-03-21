@@ -1,60 +1,59 @@
-# TaeB Production Deploy Checklist
+# TaeB 배포(도메인) 빠른 가이드
 
-## 1) Server (필수)
+## 1) 서버를 먼저 배포해서 HTTPS 도메인 확보
 
-`server/.env` 확인:
+이 프로젝트는 `render.yaml` + `server/Dockerfile`이 준비되어 있습니다.
 
-```env
-PORT=4000
-SERVER_API_KEY=YOUR_STRONG_KEY
+1. Render에서 `New +` -> `Blueprint` 선택
+2. 이 GitHub 저장소 연결
+3. 배포 후 도메인 확인  
+   예: `https://taeb-messenger-server.onrender.com`
 
-PGHOST=aws-1-ap-southeast-1.pooler.supabase.com
-PGPORT=5432
-PGDATABASE=postgres
-PGUSER=postgres.pazjqrixnuiddenfosll
-PGPASSWORD=YOUR_DB_PASSWORD
-PGSSLMODE_REJECT_UNAUTHORIZED=false
-```
+## 2) Render 환경변수 입력
 
-실행 확인:
+`SERVER_API_KEY`, `PGHOST`, `PGUSER`, `PGPASSWORD`는 반드시 직접 넣으세요.
 
-```powershell
-cd c:\Users\jan26\check\server
-npm install
-npm run start
-```
+필수:
+- `SERVER_API_KEY`
+- `PGHOST`
+- `PGUSER`
+- `PGPASSWORD`
 
-헬스체크:
+메신저:
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_WEBHOOK_SECRET`
+- `LINE_CHANNEL_ACCESS_TOKEN`
+- `LINE_CHANNEL_SECRET`
 
-`http://localhost:4000/health` -> `{"status":"ok"}`
+이메일(선택):
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
 
-## 2) Expo build env (필수)
+## 3) 서버 정상 여부 확인
 
-EAS 환경변수(Production) 등록:
+- `GET https://<your-domain>/health` -> `{"status":"ok"}`
+- `GET https://<your-domain>/api/config/status`
+  - Header: `x-api-key: <SERVER_API_KEY>`
+  - `dbConfigured: true` 확인
 
-- `EXPO_PUBLIC_MESSENGER_SERVER_BASE_URL` = `https://<your-server-domain>`
-- `EXPO_PUBLIC_MESSENGER_SERVER_API_KEY` = `SERVER_API_KEY와 동일값`
+## 4) 앱 빌드 변수 설정
 
-## 3) Android AAB build
+EAS 환경변수(Production):
+- `EXPO_PUBLIC_MESSENGER_SERVER_BASE_URL=https://<your-domain>`
+- `EXPO_PUBLIC_MESSENGER_SERVER_API_KEY=<SERVER_API_KEY>`
+
+## 5) 텔레그램/라인 웹훅 주소 갱신
+
+- Telegram: `https://<your-domain>/telegram/webhook`
+- LINE: `https://<your-domain>/line/webhook`
+
+## 6) AAB 빌드
 
 ```powershell
 cd c:\Users\jan26\check
-npm install
 npm run build:android
 ```
 
-완료 후 EAS에서 `.aab` 다운로드 -> Google Play Console 업로드.
-
-## 4) Play Console 업로드 전 체크
-
-- 버전코드 중복 금지(기존보다 커야 함)
-- 앱 설명/스크린샷 최신 반영
-- 개인정보처리방침 URL 동작 확인
-- 서버 URL이 `https` 인지 확인
-
-## 5) 실패 시 빠른 점검
-
-- `password authentication failed` -> DB 비밀번호 재설정 후 `.env` 갱신
-- `Tenant or user not found` -> `PGUSER` 오타 확인 (`postgres.<project-ref>`)
-- EAS build limit 초과 -> 월 리셋 대기 또는 유료 플랜
-
+중요:
+- 스토어용은 반드시 `https://` 도메인 사용
+- `localhost`/내부IP는 스토어 앱에서 동작하지 않음

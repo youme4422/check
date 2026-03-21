@@ -1,10 +1,27 @@
 import { Router } from 'express';
 
+import { env } from '../config/env.js';
 import { dispatchMessage } from '../services/message.service.js';
 import { createLinkCode, saveMessengerLinks } from '../store/userStore.js';
 import { sendError, sendOk } from '../utils/http.js';
 
 export const messagesRouter = Router();
+
+messagesRouter.get('/config/status', (_req, res) => {
+  sendOk(res, {
+    dbConfigured: Boolean(env.databaseUrl || (env.pgHost && env.pgDatabase && env.pgUser && env.pgPassword)),
+    channels: {
+      line: {
+        configured: Boolean(env.lineChannelAccessToken),
+        webhookSignatureEnabled: Boolean(env.lineChannelSecret),
+      },
+      telegram: {
+        configured: Boolean(env.telegramBotToken),
+        webhookSecretEnabled: Boolean(env.telegramWebhookSecret),
+      },
+    },
+  });
+});
 
 function isValidUserId(value) {
   return /^[a-zA-Z0-9._-]{3,64}$/.test(value);
@@ -124,6 +141,16 @@ messagesRouter.post('/users/:userId/link-codes', (req, res) => {
 
   if (!['line', 'telegram'].includes(channel)) {
     sendError(res, 400, 'UNSUPPORTED_CHANNEL', 'Only line or telegram is supported for link codes.');
+    return;
+  }
+
+  if (channel === 'line' && !env.lineChannelAccessToken) {
+    sendError(res, 400, 'CHANNEL_NOT_CONFIGURED', 'LINE is not configured on server.');
+    return;
+  }
+
+  if (channel === 'telegram' && !env.telegramBotToken) {
+    sendError(res, 400, 'CHANNEL_NOT_CONFIGURED', 'Telegram is not configured on server.');
     return;
   }
 

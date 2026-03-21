@@ -62,6 +62,22 @@ npm install
 npm run dev
 ```
 
+## Deploy (Render quick path)
+
+This repo includes:
+- `render.yaml` (root)
+- `server/Dockerfile`
+
+Steps:
+1. Connect repo in Render using Blueprint deploy.
+2. Fill secret env vars in Render (`SERVER_API_KEY`, `PGHOST`, `PGUSER`, `PGPASSWORD`, channel tokens).
+3. After deploy, verify:
+   - `GET https://<your-domain>/health`
+   - `GET https://<your-domain>/api/config/status` with `x-api-key`.
+4. Use that HTTPS domain in Expo build env:
+   - `EXPO_PUBLIC_MESSENGER_SERVER_BASE_URL=https://<your-domain>`
+   - `EXPO_PUBLIC_MESSENGER_SERVER_API_KEY=<SERVER_API_KEY>`
+
 If `DATABASE_URL` is set, the server will use PostgreSQL and auto-create required tables.
 If `DATABASE_URL` is empty but `PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD` are set, PostgreSQL is also enabled.
 If `DATABASE_URL` is empty, it falls back to in-memory mode (not recommended for production).
@@ -94,6 +110,17 @@ or
 `POST /line/webhook`
 
 For Telegram webhook security, set a secret token when registering webhook and use the same value in `TELEGRAM_WEBHOOK_SECRET`.
+
+### Production checklist for LINE/Telegram
+
+- Set `LINE_CHANNEL_ACCESS_TOKEN` and `TELEGRAM_BOT_TOKEN` in `server/.env`
+- Set webhook URLs to your public `https` server:
+  - `POST https://<your-domain>/line/webhook`
+  - `POST https://<your-domain>/telegram/webhook`
+- Keep `SERVER_API_KEY` strong and private
+- Verify config status (authenticated route):
+  - `GET /api/config/status`
+  - Expect `channels.line.configured=true` and `channels.telegram.configured=true`
 
 ## Register email
 
