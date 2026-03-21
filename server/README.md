@@ -14,6 +14,14 @@ Create `server/.env`:
 
 ```env
 PORT=4000
+DATABASE_URL=postgresql://user:password@host:5432/dbname?sslmode=require
+# Or use separate fields (easier to debug):
+# PGHOST=aws-1-ap-southeast-1.pooler.supabase.com
+# PGPORT=5432
+# PGDATABASE=postgres
+# PGUSER=postgres.your_project_ref
+# PGPASSWORD=your_database_password
+# PGSSLMODE_REJECT_UNAUTHORIZED=false
 SERVER_API_KEY=replace_with_strong_api_key
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 TELEGRAM_WEBHOOK_SECRET=your_telegram_webhook_secret
@@ -53,6 +61,10 @@ Set-Location "C:\Users\jan26\check\server"
 npm install
 npm run dev
 ```
+
+If `DATABASE_URL` is set, the server will use PostgreSQL and auto-create required tables.
+If `DATABASE_URL` is empty but `PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD` are set, PostgreSQL is also enabled.
+If `DATABASE_URL` is empty, it falls back to in-memory mode (not recommended for production).
 
 ## API Auth
 

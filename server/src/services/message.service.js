@@ -1,4 +1,5 @@
 import { env } from '../config/env.js';
+import { dbQuery, isDatabaseEnabled } from '../db/client.js';
 import { getMessengerLinks } from '../store/userStore.js';
 import { logDispatchEvent } from '../utils/logger.js';
 import { sendEmailMessage } from './email.service.js';
@@ -47,16 +48,94 @@ function getMonthlyUsage(channel, timestampMs) {
   return monthlyUsageByChannel.get(`${channel}:${monthKey}`) || 0;
 }
 
-function increaseMonthlyUsage(channel, timestampMs) {
+function increaseMonthlyUsageInMemory(channel, timestampMs) {
   const monthKey = getMonthKey(timestampMs);
   const key = `${channel}:${monthKey}`;
   const current = monthlyUsageByChannel.get(key) || 0;
   monthlyUsageByChannel.set(key, current + 1);
 }
 
-function getChannelQuotaState(channel, timestampMs) {
+async function getLastSentAt(userId) {
+  if (isDatabaseEnabled()) {
+    const result = await dbQuery(
+      `
+      SELECT last_sent_at
+      FROM dispatch_state
+      WHERE user_id = $1
+      LIMIT 1;
+      `,
+      [String(userId || '').trim()]
+    );
+    const row = result.rows[0];
+    if (row && Number.isFinite(Number(row.last_sent_at))) {
+      return Number(row.last_sent_at);
+    }
+  }
+
+  return lastSentAtByUser.get(userId);
+}
+
+async function setLastSentAt(userId, timestampMs) {
+  if (isDatabaseEnabled()) {
+    await dbQuery(
+      `
+      INSERT INTO dispatch_state (user_id, last_sent_at, updated_at)
+      VALUES ($1, $2, NOW())
+      ON CONFLICT (user_id)
+      DO UPDATE SET
+        last_sent_at = EXCLUDED.last_sent_at,
+        updated_at = NOW();
+      `,
+      [String(userId || '').trim(), Number(timestampMs)]
+    );
+  }
+
+  lastSentAtByUser.set(userId, timestampMs);
+}
+
+async function getMonthlyUsageCount(channel, timestampMs) {
+  if (isDatabaseEnabled()) {
+    const monthKey = getMonthKey(timestampMs);
+    const result = await dbQuery(
+      `
+      SELECT used_count
+      FROM channel_usage
+      WHERE month_key = $1 AND channel = $2
+      LIMIT 1;
+      `,
+      [monthKey, channel]
+    );
+    const row = result.rows[0];
+    if (row && Number.isFinite(Number(row.used_count))) {
+      return Number(row.used_count);
+    }
+  }
+
+  return getMonthlyUsage(channel, timestampMs);
+}
+
+async function increaseMonthlyUsage(channel, timestampMs) {
+  if (isDatabaseEnabled()) {
+    const monthKey = getMonthKey(timestampMs);
+    await dbQuery(
+      `
+      INSERT INTO channel_usage (month_key, channel, used_count, updated_at)
+      VALUES ($1, $2, 1, NOW())
+      ON CONFLICT (month_key, channel)
+      DO UPDATE SET
+        used_count = channel_usage.used_count + 1,
+        updated_at = NOW();
+      `,
+      [monthKey, channel]
+    );
+  }
+
+  increaseMonthlyUsageInMemory(channel, timestampMs);
+}
+
+async function getChannelQuotaState(channel, timestampMs) {
   const limit = getEffectiveMonthlyLimit(channel);
-  const used = getMonthlyUsage(channel, timestampMs);
+  const used = await getMonthlyUsageCount(channel, timestampMs);
   const hasLimit = typeof limit === 'number';
   const remaining = hasLimit ? Math.max(0, limit - used) : null;
   const nextResetAt = getNextMonthTimestamp(timestampMs);
@@ -86,7 +165,7 @@ function normalizeRequestedChannels(channel, channels) {
 export async function dispatchMessage({ userId, channel, channels, text }) {
   const cooldownMs = env.messageCooldownMinutes * 60 * 1000;
   const now = Date.now();
-  const lastSentAt = lastSentAtByUser.get(userId);
+  const lastSentAt = await getLastSentAt(userId);
   const requestedChannels = normalizeRequestedChannels(channel, channels);
   const channelLabel = requestedChannels.join('+');
 
@@ -103,7 +182,7 @@ export async function dispatchMessage({ userId, channel, channels, text }) {
     }
   }
 
-  const links = getMessengerLinks(userId);
+  const links = await getMessengerLinks(userId);
   if (!links) {
     throw new Error('No linked recipients were found for this user.');
   }
@@ -111,7 +190,7 @@ export async function dispatchMessage({ userId, channel, channels, text }) {
   const deliveredChannels = [];
   const blockedChannels = [];
 
-  const lineQuota = getChannelQuotaState('line', now);
+  const lineQuota = await getChannelQuotaState('line', now);
   if (requestedChannels.includes('line') && lineQuota.blocked) {
     blockedChannels.push({
       channel: 'line',
@@ -131,11 +210,11 @@ export async function dispatchMessage({ userId, channel, channels, text }) {
       to: links.lineUserId,
       text,
     });
-    increaseMonthlyUsage('line', now);
+    await increaseMonthlyUsage('line', now);
     deliveredChannels.push('line');
   }
 
-  const telegramQuota = getChannelQuotaState('telegram', now);
+  const telegramQuota = await getChannelQuotaState('telegram', now);
   if (requestedChannels.includes('telegram') && telegramQuota.blocked) {
     blockedChannels.push({
       channel: 'telegram',
@@ -155,11 +234,11 @@ export async function dispatchMessage({ userId, channel, channels, text }) {
       chatId: links.telegramChatId,
       text,
     });
-    increaseMonthlyUsage('telegram', now);
+    await increaseMonthlyUsage('telegram', now);
     deliveredChannels.push('telegram');
   }
 
-  const emailQuota = getChannelQuotaState('email', now);
+  const emailQuota = await getChannelQuotaState('email', now);
   if (requestedChannels.includes('email') && emailQuota.blocked) {
     blockedChannels.push({
       channel: 'email',
@@ -179,7 +258,7 @@ export async function dispatchMessage({ userId, channel, channels, text }) {
       to: links.email,
       text,
     });
-    increaseMonthlyUsage('email', now);
+    await increaseMonthlyUsage('email', now);
     deliveredChannels.push('email');
   }
 
@@ -195,7 +274,7 @@ export async function dispatchMessage({ userId, channel, channels, text }) {
     };
   }
 
-  lastSentAtByUser.set(userId, now);
+  await setLastSentAt(userId, now);
   logDispatchEvent({
     userId,
     channel: channelLabel,

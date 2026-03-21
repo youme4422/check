@@ -22,89 +22,95 @@ function isValidLineUserId(value) {
   return /^U[0-9a-fA-F]{32}$/.test(value);
 }
 
-messagesRouter.post('/users/:userId/messenger-links', (req, res) => {
-  const userId = String(req.params.userId || '').trim();
-  const channel = String(req.body?.channel || '').trim().toLowerCase();
-  const chatId = String(req.body?.chatId || '').trim();
-  const lineUserId = String(req.body?.lineUserId || '').trim();
-  const email = String(req.body?.email || '').trim().toLowerCase();
-  const telegramChatId = String(req.body?.telegramChatId || '').trim();
+messagesRouter.post('/users/:userId/messenger-links', async (req, res) => {
+  try {
+    const userId = String(req.params.userId || '').trim();
+    const channel = String(req.body?.channel || '').trim().toLowerCase();
+    const chatId = String(req.body?.chatId || '').trim();
+    const lineUserId = String(req.body?.lineUserId || '').trim();
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const telegramChatId = String(req.body?.telegramChatId || '').trim();
 
-  if (!isValidUserId(userId)) {
-    sendError(res, 400, 'INVALID_USER_ID', 'userId must be 3-64 chars: letters, numbers, dot, underscore, or hyphen.');
-    return;
-  }
-
-  // Telegram/email format
-  if (channel || chatId) {
-    if (!['line', 'telegram', 'email'].includes(channel)) {
-      sendError(res, 400, 'UNSUPPORTED_CHANNEL', 'Only line, telegram, or email channel is enabled in this mode.');
+    if (!isValidUserId(userId)) {
+      sendError(res, 400, 'INVALID_USER_ID', 'userId must be 3-64 chars: letters, numbers, dot, underscore, or hyphen.');
       return;
     }
 
-    if (channel === 'line') {
-      if (!isValidLineUserId(lineUserId)) {
-        sendError(res, 400, 'INVALID_LINE_USER_ID', 'lineUserId format is invalid.');
+    // Telegram/email format
+    if (channel || chatId) {
+      if (!['line', 'telegram', 'email'].includes(channel)) {
+        sendError(res, 400, 'UNSUPPORTED_CHANNEL', 'Only line, telegram, or email channel is enabled in this mode.');
         return;
       }
 
-      const saved = saveMessengerLinks(userId, { lineUserId });
+      if (channel === 'line') {
+        if (!isValidLineUserId(lineUserId)) {
+          sendError(res, 400, 'INVALID_LINE_USER_ID', 'lineUserId format is invalid.');
+          return;
+        }
+
+        const saved = await saveMessengerLinks(userId, { lineUserId });
+        sendOk(res, { status: 'saved', user: saved });
+        return;
+      }
+
+      if (channel === 'telegram') {
+        if (!isValidTelegramChatId(chatId)) {
+          sendError(res, 400, 'INVALID_CHAT_ID', 'chatId format is invalid.');
+          return;
+        }
+
+        const saved = await saveMessengerLinks(userId, { telegramChatId: chatId });
+        sendOk(res, { status: 'saved', user: saved });
+        return;
+      }
+
+      if (!isValidEmail(email)) {
+        sendError(res, 400, 'INVALID_EMAIL', 'email format is invalid.');
+        return;
+      }
+
+      const saved = await saveMessengerLinks(userId, { email });
       sendOk(res, { status: 'saved', user: saved });
       return;
     }
 
-    if (channel === 'telegram') {
-      if (!isValidTelegramChatId(chatId)) {
-        sendError(res, 400, 'INVALID_CHAT_ID', 'chatId format is invalid.');
-        return;
-      }
+    // Backward compatibility: { lineUserId, telegramChatId, email }
+    const hasLine = Boolean(lineUserId);
+    const hasTelegram = Boolean(telegramChatId);
+    const hasEmail = Boolean(email);
 
-      const saved = saveMessengerLinks(userId, { telegramChatId: chatId });
-      sendOk(res, { status: 'saved', user: saved });
+    if (!hasLine && !hasTelegram && !hasEmail) {
+      sendError(res, 400, 'NO_RECIPIENT', 'lineUserId, telegramChatId or email is required.');
       return;
     }
 
-    if (!isValidEmail(email)) {
+    if (hasLine && !isValidLineUserId(lineUserId)) {
+      sendError(res, 400, 'INVALID_LINE_USER_ID', 'lineUserId format is invalid.');
+      return;
+    }
+
+    if (hasTelegram && !isValidTelegramChatId(telegramChatId)) {
+      sendError(res, 400, 'INVALID_TELEGRAM_CHAT_ID', 'telegramChatId format is invalid.');
+      return;
+    }
+
+    if (hasEmail && !isValidEmail(email)) {
       sendError(res, 400, 'INVALID_EMAIL', 'email format is invalid.');
       return;
     }
 
-    const saved = saveMessengerLinks(userId, { email });
+    const saved = await saveMessengerLinks(userId, {
+      lineUserId: hasLine ? lineUserId : undefined,
+      telegramChatId: hasTelegram ? telegramChatId : undefined,
+      email: hasEmail ? email : undefined,
+    });
     sendOk(res, { status: 'saved', user: saved });
-    return;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to save messenger links.';
+    console.error(`[messenger-links-failed] reason=${message}`);
+    sendError(res, 500, 'MESSENGER_LINKS_FAILED', 'Unable to save messenger links.');
   }
-
-  // Backward compatibility: { lineUserId, telegramChatId, email }
-  const hasLine = Boolean(lineUserId);
-  const hasTelegram = Boolean(telegramChatId);
-  const hasEmail = Boolean(email);
-
-  if (!hasLine && !hasTelegram && !hasEmail) {
-    sendError(res, 400, 'NO_RECIPIENT', 'lineUserId, telegramChatId or email is required.');
-    return;
-  }
-
-  if (hasLine && !isValidLineUserId(lineUserId)) {
-    sendError(res, 400, 'INVALID_LINE_USER_ID', 'lineUserId format is invalid.');
-    return;
-  }
-
-  if (hasTelegram && !isValidTelegramChatId(telegramChatId)) {
-    sendError(res, 400, 'INVALID_TELEGRAM_CHAT_ID', 'telegramChatId format is invalid.');
-    return;
-  }
-
-  if (hasEmail && !isValidEmail(email)) {
-    sendError(res, 400, 'INVALID_EMAIL', 'email format is invalid.');
-    return;
-  }
-
-  const saved = saveMessengerLinks(userId, {
-    lineUserId: hasLine ? lineUserId : undefined,
-    telegramChatId: hasTelegram ? telegramChatId : undefined,
-    email: hasEmail ? email : undefined,
-  });
-  sendOk(res, { status: 'saved', user: saved });
 });
 
 messagesRouter.post('/users/:userId/link-codes', (req, res) => {

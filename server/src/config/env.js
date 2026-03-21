@@ -7,6 +7,14 @@ function parseNumber(raw, fallback) {
 
 export const env = {
   port: parseNumber(process.env.PORT, 4000),
+  databaseUrl: String(process.env.DATABASE_URL || '').trim(),
+  pgHost: String(process.env.PGHOST || '').trim(),
+  pgPort: parseNumber(process.env.PGPORT, 5432),
+  pgDatabase: String(process.env.PGDATABASE || '').trim(),
+  pgUser: String(process.env.PGUSER || '').trim(),
+  pgPassword: String(process.env.PGPASSWORD || '').trim(),
+  pgSslRejectUnauthorized:
+    String(process.env.PGSSLMODE_REJECT_UNAUTHORIZED || 'false').toLowerCase() === 'true',
   serverApiKey: String(process.env.SERVER_API_KEY || '').trim(),
   lineChannelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || '',
   lineChannelSecret: process.env.LINE_CHANNEL_SECRET || '',

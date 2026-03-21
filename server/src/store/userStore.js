@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { dbQuery, isDatabaseEnabled } from '../db/client.js';
 
 const users = new Map();
 const linkCodes = new Map();
@@ -21,36 +22,90 @@ function generateLinkCode() {
   return code;
 }
 
-export function saveMessengerLinks(userId, links) {
-  const existing = users.get(userId) || {
+function normalizeUser(userId, links) {
+  return {
+    userId,
+    lineUserId: String(links.lineUserId || '').trim(),
+    telegramChatId: String(links.telegramChatId || '').trim(),
+    email: String(links.email || '').trim().toLowerCase(),
+  };
+}
+
+function getMemoryUser(userId) {
+  return users.get(userId) || {
     userId,
     lineUserId: '',
     telegramChatId: '',
     email: '',
   };
+}
+
+export async function saveMessengerLinks(userId, links) {
+  const existing = await getMessengerLinks(userId);
+  const safeExisting = existing || getMemoryUser(userId);
 
   const nextUser = {
     userId,
     lineUserId:
       links.lineUserId !== undefined
         ? String(links.lineUserId || '').trim()
-        : existing.lineUserId,
+        : safeExisting.lineUserId,
     telegramChatId:
       links.telegramChatId !== undefined
         ? String(links.telegramChatId || '').trim()
-        : existing.telegramChatId,
+        : safeExisting.telegramChatId,
     email:
       links.email !== undefined
         ? String(links.email || '').trim().toLowerCase()
-        : existing.email,
+        : safeExisting.email,
   };
+
+  if (isDatabaseEnabled()) {
+    const normalized = normalizeUser(userId, nextUser);
+    await dbQuery(
+      `
+      INSERT INTO messenger_links (user_id, line_user_id, telegram_chat_id, email, updated_at)
+      VALUES ($1, $2, $3, $4, NOW())
+      ON CONFLICT (user_id)
+      DO UPDATE SET
+        line_user_id = EXCLUDED.line_user_id,
+        telegram_chat_id = EXCLUDED.telegram_chat_id,
+        email = EXCLUDED.email,
+        updated_at = NOW();
+      `,
+      [normalized.userId, normalized.lineUserId, normalized.telegramChatId, normalized.email]
+    );
+  }
 
   users.set(userId, nextUser);
 
   return nextUser;
 }
 
-export function getMessengerLinks(userId) {
+export async function getMessengerLinks(userId) {
+  if (isDatabaseEnabled()) {
+    const result = await dbQuery(
+      `
+      SELECT user_id, line_user_id, telegram_chat_id, email
+      FROM messenger_links
+      WHERE user_id = $1
+      LIMIT 1;
+      `,
+      [String(userId || '').trim()]
+    );
+    const row = result.rows[0];
+    if (row) {
+      const user = {
+        userId: row.user_id,
+        lineUserId: row.line_user_id,
+        telegramChatId: row.telegram_chat_id,
+        email: row.email,
+      };
+      users.set(user.userId, user);
+      return user;
+    }
+  }
+
   return users.get(userId) || null;
 }
 
@@ -82,7 +137,7 @@ export function createLinkCode(userId, channel) {
   };
 }
 
-export function consumeLinkCode(channel, code, targetId) {
+export async function consumeLinkCode(channel, code, targetId) {
   const normalizedChannel = String(channel || '').trim().toLowerCase();
   const normalizedCode = String(code || '').trim().toUpperCase();
   const normalizedTargetId = String(targetId || '').trim();
@@ -109,8 +164,8 @@ export function consumeLinkCode(channel, code, targetId) {
 
   const updatedUser =
     normalizedChannel === 'line'
-      ? saveMessengerLinks(entry.userId, { lineUserId: normalizedTargetId })
-      : saveMessengerLinks(entry.userId, { telegramChatId: normalizedTargetId });
+      ? await saveMessengerLinks(entry.userId, { lineUserId: normalizedTargetId })
+      : await saveMessengerLinks(entry.userId, { telegramChatId: normalizedTargetId });
 
   linkCodes.delete(normalizedCode);
 
