@@ -51,7 +51,7 @@ export function MessengerLinksScreen() {
       }
     }
 
-    Alert.alert('Open failed', `Could not open ${appLabel}.`);
+    Alert.alert(t('messenger.openFailedTitle'), t('messenger.openFailedBody', { app: appLabel }));
     return false;
   };
 
@@ -71,7 +71,7 @@ export function MessengerLinksScreen() {
   const quickConnect = async (channel: 'line' | 'telegram') => {
     const normalizedAccountId = accountId.trim();
     if (!normalizedAccountId) {
-      Alert.alert('Account ID is missing', 'Please restart the app and try again.');
+      Alert.alert(t('messenger.accountIdMissingTitle'), t('messenger.accountIdMissingBody'));
       return;
     }
 
@@ -89,30 +89,30 @@ export function MessengerLinksScreen() {
       }
 
       Alert.alert(
-        'Ready',
+        t('messenger.readyTitle'),
         copied
-          ? `Paste and send this in bot chat:\n${command}`
-          : `Send this in bot chat:\n${command}`
+          ? t('messenger.readyBodyCopied', { command })
+          : t('messenger.readyBody', { command })
       );
     } catch {
-      Alert.alert('Failed', 'Could not create link code. Check server connection.');
+      Alert.alert(t('messenger.failedTitle'), t('messenger.linkCodeFailedBody'));
     }
   };
 
   const handleSave = async () => {
     const normalizedAccountId = accountId.trim();
     if (!normalizedAccountId) {
-      Alert.alert('Please try again');
+      Alert.alert(t('messenger.tryAgainTitle'));
       return;
     }
 
     if (!form.lineEnabled && !form.telegramEnabled && !form.emailEnabled) {
-      Alert.alert('Select at least one channel');
+      Alert.alert(t('messenger.selectChannelTitle'));
       return;
     }
 
     if (form.emailEnabled && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      Alert.alert('Please check email format');
+      Alert.alert(t('messenger.invalidEmailTitle'));
       return;
     }
 
@@ -138,22 +138,22 @@ export function MessengerLinksScreen() {
           email: form.email.trim(),
         });
       } catch {
-        Alert.alert('Saved locally', 'Email sync to server failed. Check server URL/status.');
+        Alert.alert(t('messenger.savedLocallyTitle'), t('messenger.savedLocallyBody'));
         return;
       }
     }
 
-    Alert.alert('Saved', 'Settings saved.');
+    Alert.alert(t('messenger.savedTitle'), t('messenger.savedBody'));
   };
 
   return (
     <ScreenContainer>
       <SectionCard>
         <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('settings.messengerLabel')}</Text>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Simple connect</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('messenger.simpleConnectTitle')}</Text>
 
         <View style={styles.switchRow}>
-          <Text style={[styles.switchLabel, { color: theme.text }]}>LINE</Text>
+          <Text style={[styles.switchLabel, { color: theme.text }]}>{t('messenger.lineLabel')}</Text>
           <Switch
             value={form.lineEnabled}
             onValueChange={(value) => setForm((current) => ({ ...current, lineEnabled: value }))}
@@ -161,10 +161,10 @@ export function MessengerLinksScreen() {
             thumbColor={form.lineEnabled ? theme.primary : theme.card}
           />
         </View>
-        {form.lineEnabled ? <AppButton label="Connect LINE" onPress={() => void quickConnect('line')} /> : null}
+        {form.lineEnabled ? <AppButton label={t('messenger.connectLineButton')} onPress={() => void quickConnect('line')} /> : null}
 
         <View style={styles.switchRow}>
-          <Text style={[styles.switchLabel, { color: theme.text }]}>Telegram</Text>
+          <Text style={[styles.switchLabel, { color: theme.text }]}>{t('messenger.telegramLabel')}</Text>
           <Switch
             value={form.telegramEnabled}
             onValueChange={(value) => setForm((current) => ({ ...current, telegramEnabled: value }))}
@@ -172,10 +172,12 @@ export function MessengerLinksScreen() {
             thumbColor={form.telegramEnabled ? theme.primary : theme.card}
           />
         </View>
-        {form.telegramEnabled ? <AppButton label="Connect Telegram" onPress={() => void quickConnect('telegram')} /> : null}
+        {form.telegramEnabled ? (
+          <AppButton label={t('messenger.connectTelegramButton')} onPress={() => void quickConnect('telegram')} />
+        ) : null}
 
         <View style={styles.switchRow}>
-          <Text style={[styles.switchLabel, { color: theme.text }]}>Email</Text>
+          <Text style={[styles.switchLabel, { color: theme.text }]}>{t('messenger.emailLabel')}</Text>
           <Switch
             value={form.emailEnabled}
             onValueChange={(value) => setForm((current) => ({ ...current, emailEnabled: value }))}
@@ -187,7 +189,7 @@ export function MessengerLinksScreen() {
           <TextInput
             value={form.email}
             onChangeText={(value) => setForm((current) => ({ ...current, email: value }))}
-            placeholder="alert@example.com"
+            placeholder={t('messenger.emailPlaceholder')}
             style={[styles.input, { borderColor: theme.border, backgroundColor: theme.input, color: theme.text }]}
             placeholderTextColor="#8A9A92"
             autoCapitalize="none"
@@ -196,7 +198,7 @@ export function MessengerLinksScreen() {
           />
         ) : null}
 
-        <AppButton label="Save" onPress={() => void handleSave()} />
+        <AppButton label={t('messenger.saveButton')} onPress={() => void handleSave()} />
       </SectionCard>
     </ScreenContainer>
   );

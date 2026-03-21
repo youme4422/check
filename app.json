@@ -3,7 +3,7 @@
     "name": "TaeB",
     "slug": "check-in-safe",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "taeb",
     "userInterfaceStyle": "light",
@@ -69,6 +69,8 @@
       "reactCompiler": true
     },
     "extra": {
+      "messengerServerBaseUrl": "",
+      "messengerServerApiKey": "",
       "eas": {
         "projectId": "fa86ed90-4ef6-4ceb-900f-b2cf74eeb70c"
       }
