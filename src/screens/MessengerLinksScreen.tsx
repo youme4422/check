@@ -226,6 +226,13 @@ export function MessengerLinksScreen() {
       <SectionCard>
         <Text style={[styles.eyebrow, { color: theme.primary }]}>{t('settings.messengerLabel')}</Text>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('messenger.simpleConnectTitle')}</Text>
+        <View style={[styles.guideBox, { borderColor: theme.border, backgroundColor: theme.input }]}>
+          <Text style={[styles.guideTitle, { color: theme.text }]}>{ui.guideTitle}</Text>
+          <Text style={[styles.guideItem, { color: theme.mutedText }]}>{ui.guideStep1}</Text>
+          <Text style={[styles.guideItem, { color: theme.mutedText }]}>{ui.guideStep2}</Text>
+          <Text style={[styles.guideItem, { color: theme.mutedText }]}>{ui.guideStep3}</Text>
+          <Text style={[styles.guideTip, { color: theme.primary }]}>{ui.guideTip}</Text>
+        </View>
 
         <View style={styles.switchRow}>
           <Text style={[styles.switchLabel, { color: theme.text }]}>{t('messenger.lineLabel')}</Text>
@@ -351,6 +358,27 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 10,
   },
+  guideBox: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 10,
+  },
+  guideTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  guideItem: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  guideTip: {
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: 4,
+  },
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -408,16 +436,21 @@ const styles = StyleSheet.create({
 });
 
 function getMessengerUiText(locale: Locale) {
-  const byLocale = {
+  const uiByLocale = {
     ko: {
+      guideTitle: '연결 방법 (3단계)',
+      guideStep1: '1) 코드 생성',
+      guideStep2: '2) 코드를 수신자에게 전달',
+      guideStep3: '3) 수신자가 봇 채팅에 코드 전송',
+      guideTip: '완료 후 [연결 확인]을 눌러주세요.',
       codeReadyTitle: '코드 생성 완료',
       codeReadyBody: (channel: 'line' | 'telegram', bot: string, code: string) =>
-        `${channel === 'line' ? 'LINE' : `Telegram (@${bot})`} 채팅에 아래 코드를 보내세요.\n${code}`,
+        `${channel === 'line' ? 'LINE' : `Telegram (@${bot})`} 채팅에 아래 코드를 보내주세요.\n${code}`,
       codeReadyCopiedBody: (channel: 'line' | 'telegram', bot: string, code: string) =>
-        `코드가 복사되었습니다. ${channel === 'line' ? 'LINE' : `Telegram (@${bot})`} 채팅에 붙여넣어 보내세요.\n${code}`,
+        `코드가 복사되었습니다. ${channel === 'line' ? 'LINE' : `Telegram (@${bot})`} 채팅에 붙여 넣어 보내주세요.\n${code}`,
       connectedTitle: '연결 완료',
-      connectedLineBody: 'LINE 연결이 확인되었습니다.',
-      connectedTelegramBody: 'Telegram 연결이 확인되었습니다.',
+      connectedLineBody: 'LINE 연결을 확인했습니다.',
+      connectedTelegramBody: 'Telegram 연결을 확인했습니다.',
       notConnectedTitle: '아직 연결되지 않음',
       notConnectedLineBody: '생성한 코드를 LINE 채팅에 보낸 뒤 다시 연결 확인을 눌러주세요.',
       notConnectedTelegramBody: '생성한 코드를 Telegram 채팅에 보낸 뒤 다시 연결 확인을 눌러주세요.',
@@ -446,6 +479,11 @@ function getMessengerUiText(locale: Locale) {
       openFailedBody: (app: string) => `${app} 앱을 열 수 없습니다.`,
     },
     en: {
+      guideTitle: 'How to connect (3 steps)',
+      guideStep1: '1) Generate code',
+      guideStep2: '2) Share code with recipient',
+      guideStep3: '3) Recipient sends code in bot chat',
+      guideTip: 'After that, tap [Check connection].',
       codeReadyTitle: 'Code Ready',
       codeReadyBody: (channel: 'line' | 'telegram', bot: string, code: string) =>
         `Send this code in ${channel === 'line' ? 'LINE' : `Telegram (@${bot})`} chat.\n${code}`,
@@ -481,7 +519,134 @@ function getMessengerUiText(locale: Locale) {
       openFailedTitle: 'Open failed',
       openFailedBody: (app: string) => `Could not open ${app}.`,
     },
+    ja: {
+      guideTitle: '連携方法（3ステップ）',
+      guideStep1: '1) コードを生成',
+      guideStep2: '2) コードを相手に共有',
+      guideStep3: '3) 相手がボットチャットにコード送信',
+      guideTip: '完了後に「接続確認」を押してください。',
+      codeReadyTitle: 'コード作成完了',
+      codeReadyBody: (channel: 'line' | 'telegram', bot: string, code: string) =>
+        `${channel === 'line' ? 'LINE' : `Telegram (@${bot})`} チャットに次のコードを送信してください。\n${code}`,
+      codeReadyCopiedBody: (channel: 'line' | 'telegram', bot: string, code: string) =>
+        `コードをコピーしました。${channel === 'line' ? 'LINE' : `Telegram (@${bot})`} チャットに貼り付けて送信してください。\n${code}`,
+      connectedTitle: '接続完了',
+      connectedLineBody: 'LINE との接続を確認しました。',
+      connectedTelegramBody: 'Telegram との接続を確認しました。',
+      notConnectedTitle: '未接続',
+      notConnectedLineBody: '生成したコードをLINEチャットに送信してから、もう一度接続確認を押してください。',
+      notConnectedTelegramBody: '生成したコードをTelegramチャットに送信してから、もう一度接続確認を押してください。',
+      connectCheckFailedTitle: '接続確認に失敗しました',
+      connectCheckFailedBody: 'チャンネル接続状態を確認できませんでした。',
+      noCodeTitle: 'コードがありません',
+      noCodeBody: '先にコードを作成してください。',
+      copiedTitle: 'コピー完了',
+      copiedBody: 'コードをクリップボードにコピーしました。',
+      copyFailedTitle: 'コピー失敗',
+      copyFailedBody: 'コードを長押しして手動でコピーしてください。',
+      statusLabel: '状態',
+      connectedShort: '接続済み',
+      notConnectedShort: '未接続',
+      generateLineCodeButton: 'LINEコード作成',
+      generateTelegramCodeButton: 'Telegramコード作成',
+      copyLineCodeButton: 'LINEコードをコピー',
+      copyTelegramCodeButton: 'Telegramコードをコピー',
+      checkLineConnectionButton: 'LINE接続確認',
+      checkTelegramConnectionButton: 'Telegram接続確認',
+      checkingButton: '確認中...',
+      codeLabel: 'コード',
+      openLineButton: 'LINEを開く',
+      openTelegramButton: 'Telegramを開く',
+      openFailedTitle: '起動失敗',
+      openFailedBody: (app: string) => `${app} を開けませんでした。`,
+    },
+    es: {
+      guideTitle: 'Cómo conectar (3 pasos)',
+      guideStep1: '1) Genera el código',
+      guideStep2: '2) Comparte el código con el destinatario',
+      guideStep3: '3) El destinatario envía el código en el chat del bot',
+      guideTip: 'Después, toca [Comprobar conexión].',
+      codeReadyTitle: 'Código listo',
+      codeReadyBody: (channel: 'line' | 'telegram', bot: string, code: string) =>
+        `Envía este código en el chat de ${channel === 'line' ? 'LINE' : `Telegram (@${bot})`}.\n${code}`,
+      codeReadyCopiedBody: (channel: 'line' | 'telegram', bot: string, code: string) =>
+        `Código copiado. Pégalo y envíalo en el chat de ${channel === 'line' ? 'LINE' : `Telegram (@${bot})`}.\n${code}`,
+      connectedTitle: 'Conectado',
+      connectedLineBody: 'LINE está conectado.',
+      connectedTelegramBody: 'Telegram está conectado.',
+      notConnectedTitle: 'Aún no conectado',
+      notConnectedLineBody: 'Envía el código generado en el chat de LINE y vuelve a comprobar.',
+      notConnectedTelegramBody: 'Envía el código generado en el chat de Telegram y vuelve a comprobar.',
+      connectCheckFailedTitle: 'Falló la verificación',
+      connectCheckFailedBody: 'No se pudo verificar la conexión del canal.',
+      noCodeTitle: 'Sin código',
+      noCodeBody: 'Primero genera un código.',
+      copiedTitle: 'Copiado',
+      copiedBody: 'El código se copió al portapapeles.',
+      copyFailedTitle: 'Error al copiar',
+      copyFailedBody: 'Mantén presionado el código para copiar manualmente.',
+      statusLabel: 'Estado',
+      connectedShort: 'Conectado',
+      notConnectedShort: 'Sin conectar',
+      generateLineCodeButton: 'Generar código de LINE',
+      generateTelegramCodeButton: 'Generar código de Telegram',
+      copyLineCodeButton: 'Copiar código de LINE',
+      copyTelegramCodeButton: 'Copiar código de Telegram',
+      checkLineConnectionButton: 'Comprobar LINE',
+      checkTelegramConnectionButton: 'Comprobar Telegram',
+      checkingButton: 'Comprobando...',
+      codeLabel: 'Código',
+      openLineButton: 'Abrir LINE',
+      openTelegramButton: 'Abrir Telegram',
+      openFailedTitle: 'No se pudo abrir',
+      openFailedBody: (app: string) => `No se pudo abrir ${app}.`,
+    },
+    zh: {
+      guideTitle: '连接方法（3步）',
+      guideStep1: '1) 生成代码',
+      guideStep2: '2) 将代码发给接收人',
+      guideStep3: '3) 接收人在机器人聊天中发送代码',
+      guideTip: '完成后请点击“检查连接”。',
+      codeReadyTitle: '代码已生成',
+      codeReadyBody: (channel: 'line' | 'telegram', bot: string, code: string) =>
+        `请在${channel === 'line' ? 'LINE' : `Telegram (@${bot})`}聊天中发送以下代码。\n${code}`,
+      codeReadyCopiedBody: (channel: 'line' | 'telegram', bot: string, code: string) =>
+        `代码已复制。请粘贴并发送到${channel === 'line' ? 'LINE' : `Telegram (@${bot})`}聊天。\n${code}`,
+      connectedTitle: '连接成功',
+      connectedLineBody: 'LINE 已连接。',
+      connectedTelegramBody: 'Telegram 已连接。',
+      notConnectedTitle: '尚未连接',
+      notConnectedLineBody: '请先把生成的代码发送到 LINE 聊天，然后再点一次检查连接。',
+      notConnectedTelegramBody: '请先把生成的代码发送到 Telegram 聊天，然后再点一次检查连接。',
+      connectCheckFailedTitle: '检查连接失败',
+      connectCheckFailedBody: '无法验证频道连接状态。',
+      noCodeTitle: '没有代码',
+      noCodeBody: '请先生成代码。',
+      copiedTitle: '已复制',
+      copiedBody: '代码已复制到剪贴板。',
+      copyFailedTitle: '复制失败',
+      copyFailedBody: '请长按代码手动复制。',
+      statusLabel: '状态',
+      connectedShort: '已连接',
+      notConnectedShort: '未连接',
+      generateLineCodeButton: '生成 LINE 代码',
+      generateTelegramCodeButton: '生成 Telegram 代码',
+      copyLineCodeButton: '复制 LINE 代码',
+      copyTelegramCodeButton: '复制 Telegram 代码',
+      checkLineConnectionButton: '检查 LINE 连接',
+      checkTelegramConnectionButton: '检查 Telegram 连接',
+      checkingButton: '检查中...',
+      codeLabel: '代码',
+      openLineButton: '打开 LINE',
+      openTelegramButton: '打开 Telegram',
+      openFailedTitle: '打开失败',
+      openFailedBody: (app: string) => `无法打开 ${app}。`,
+    },
   } as const;
 
-  return byLocale[locale === 'ko' ? 'ko' : 'en'];
+  if (locale in uiByLocale) {
+    return uiByLocale[locale as keyof typeof uiByLocale];
+  }
+
+  return uiByLocale.en;
 }
