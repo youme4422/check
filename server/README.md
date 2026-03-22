@@ -28,6 +28,7 @@ TELEGRAM_WEBHOOK_SECRET=your_telegram_webhook_secret
 LINE_CHANNEL_ACCESS_TOKEN=
 LINE_CHANNEL_SECRET=
 MESSAGE_COOLDOWN_MINUTES=60
+LINK_CODE_TTL_MINUTES=30
 SAFETY_MARGIN_MESSAGES=10
 FREE_LIMIT_TELEGRAM_PER_MONTH=0
 FREE_LIMIT_LINE_PER_MONTH=200
@@ -102,8 +103,8 @@ or
 { "channel": "line" }
 ```
 
-2. User sends to Telegram bot:
-`LINK <code>`
+2. User sends code to bot chat (both formats supported):
+`<code>` or `LINK <code>`
 
 3. Webhook endpoints:
 `POST /telegram/webhook`

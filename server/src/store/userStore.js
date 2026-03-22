@@ -3,7 +3,8 @@ import { dbQuery, isDatabaseEnabled } from '../db/client.js';
 
 const users = new Map();
 const linkCodes = new Map();
-const LINK_CODE_TTL_MS = 10 * 60 * 1000;
+const LINK_CODE_TTL_MINUTES = Number(process.env.LINK_CODE_TTL_MINUTES || 30);
+const LINK_CODE_TTL_MS = Math.max(1, LINK_CODE_TTL_MINUTES) * 60 * 1000;
 
 function cleanupExpiredLinkCodes(now = Date.now()) {
   for (const [code, entry] of linkCodes.entries()) {

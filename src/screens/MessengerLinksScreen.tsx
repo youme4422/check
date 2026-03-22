@@ -1,9 +1,10 @@
-import { ActivityIndicator, Alert, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useEffect, useState } from 'react';
 
 import { AppButton } from '../components/AppButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { SectionCard } from '../components/SectionCard';
+import { LINE_OFFICIAL_ACCOUNT_ID } from '../config/appConfig';
 import { useI18n } from '../i18n/I18nProvider';
 import { createMessengerLinkCode, getMessengerLinks, linkRecipients } from '../services/messengerApi';
 import { copyText } from '../storage/copy';
@@ -34,6 +35,57 @@ export function MessengerLinksScreen() {
   });
 
   const ui = getMessengerUiText(locale);
+
+  const openLineChat = async () => {
+    const officialIdRaw = LINE_OFFICIAL_ACCOUNT_ID.trim();
+    const officialId = officialIdRaw ? (officialIdRaw.startsWith('@') ? officialIdRaw : `@${officialIdRaw}`) : '';
+    const lineIdForPath = officialId.replace('@', '');
+    const urls =
+      Platform.OS === 'android'
+        ? [
+            ...(officialId ? [`line://oaMessage/${lineIdForPath}`] : []),
+            ...(officialId ? [`intent://oaMessage/${lineIdForPath}#Intent;scheme=line;package=jp.naver.line.android;end`] : []),
+            ...(officialId ? [`https://line.me/R/oaMessage/${officialId}`] : []),
+            ...(officialId ? [`line://ti/p/${officialId}`] : []),
+            ...(officialId ? [`intent://ti/p/${officialId}#Intent;scheme=line;package=jp.naver.line.android;end`] : []),
+            ...(officialId ? [`https://line.me/R/ti/p/${officialId}`] : []),
+            'https://line.me',
+          ]
+        : [
+            ...(officialId ? [`line://oaMessage/${lineIdForPath}`] : []),
+            ...(officialId ? [`https://line.me/R/oaMessage/${officialId}`] : []),
+            ...(officialId ? [`line://ti/p/${officialId}`] : []),
+            ...(officialId ? [`https://line.me/R/ti/p/${officialId}`] : []),
+            'https://line.me',
+          ];
+
+    for (const url of urls) {
+      try {
+        await Linking.openURL(url);
+        return;
+      } catch {
+        // try next
+      }
+    }
+    Alert.alert(ui.openFailedTitle, ui.openFailedBody('LINE'));
+  };
+
+  const openTelegramChat = async () => {
+    const urls = [
+      `tg://resolve?domain=${TELEGRAM_BOT_USERNAME}`,
+      `https://t.me/${TELEGRAM_BOT_USERNAME}`,
+    ];
+
+    for (const url of urls) {
+      try {
+        await Linking.openURL(url);
+        return;
+      } catch {
+        // try next
+      }
+    }
+    Alert.alert(ui.openFailedTitle, ui.openFailedBody('Telegram'));
+  };
 
   useEffect(() => {
     setForm({
@@ -208,6 +260,7 @@ export function MessengerLinksScreen() {
                   disabled={isCheckingLinks}
                   onPress={() => void handleConnectChannel('line')}
                 />
+                <AppButton label={ui.openLineButton} variant="secondary" onPress={() => void openLineChat()} />
               </View>
             ) : null}
           </View>
@@ -246,6 +299,7 @@ export function MessengerLinksScreen() {
                   disabled={isCheckingLinks}
                   onPress={() => void handleConnectChannel('telegram')}
                 />
+                <AppButton label={ui.openTelegramButton} variant="secondary" onPress={() => void openTelegramChat()} />
               </View>
             ) : null}
           </View>
@@ -386,6 +440,10 @@ function getMessengerUiText(locale: Locale) {
       checkTelegramConnectionButton: 'Telegram 연결 확인',
       checkingButton: '확인 중...',
       codeLabel: '코드',
+      openLineButton: 'LINE 열기',
+      openTelegramButton: 'Telegram 열기',
+      openFailedTitle: '열기 실패',
+      openFailedBody: (app: string) => `${app} 앱을 열 수 없습니다.`,
     },
     en: {
       codeReadyTitle: 'Code Ready',
@@ -418,6 +476,10 @@ function getMessengerUiText(locale: Locale) {
       checkTelegramConnectionButton: 'Check Telegram connection',
       checkingButton: 'Checking...',
       codeLabel: 'Code',
+      openLineButton: 'Open LINE',
+      openTelegramButton: 'Open Telegram',
+      openFailedTitle: 'Open failed',
+      openFailedBody: (app: string) => `Could not open ${app}.`,
     },
   } as const;
 

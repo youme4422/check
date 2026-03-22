@@ -6,6 +6,8 @@ import { initDatabase, isDatabaseEnabled } from './db/client.js';
 import { requireApiAuth } from './middleware/auth.js';
 import { rateLimitRequest } from './middleware/rateLimit.js';
 import { messagesRouter } from './routes/messages.js';
+import { replyLineMessage } from './services/line.service.js';
+import { replyTelegramMessage } from './services/telegram.service.js';
 import { consumeLinkCode } from './store/userStore.js';
 import { sendError } from './utils/http.js';
 
@@ -29,11 +31,7 @@ function verifyLineSignature(rawBody, signature) {
     return false;
   }
 
-  const expected = crypto
-    .createHmac('sha256', env.lineChannelSecret)
-    .update(rawBody)
-    .digest('base64');
-
+  const expected = crypto.createHmac('sha256', env.lineChannelSecret).update(rawBody).digest('base64');
   return timingSafeEqualString(signature, expected);
 }
 
@@ -63,6 +61,38 @@ function extractLinkCodeFromText(rawText) {
   return '';
 }
 
+function getLineLinkReplyText(result) {
+  if (result?.ok) {
+    return '연결이 완료되었습니다. 앱으로 돌아가서 LINE 연결 확인 버튼을 눌러주세요.';
+  }
+  if (result?.reason === 'expired') {
+    return '코드가 만료되었습니다. 앱에서 새 코드를 생성해 다시 보내주세요.';
+  }
+  if (result?.reason === 'not_found') {
+    return '유효하지 않은 코드입니다. 앱에서 최신 코드를 다시 복사해 보내주세요.';
+  }
+  if (result?.reason === 'channel_mismatch') {
+    return '채널이 일치하지 않는 코드입니다. LINE 전용 코드를 보내주세요.';
+  }
+  return '코드를 확인하지 못했습니다. 앱에서 새 코드를 생성해 다시 시도해주세요.';
+}
+
+function getTelegramLinkReplyText(result) {
+  if (result?.ok) {
+    return '연결이 완료되었습니다. 앱으로 돌아가서 Telegram 연결 확인 버튼을 눌러주세요.';
+  }
+  if (result?.reason === 'expired') {
+    return '코드가 만료되었습니다. 앱에서 새 코드를 생성해 다시 보내주세요.';
+  }
+  if (result?.reason === 'not_found') {
+    return '유효하지 않은 코드입니다. 앱에서 최신 코드를 다시 복사해 보내주세요.';
+  }
+  if (result?.reason === 'channel_mismatch') {
+    return '채널이 일치하지 않는 코드입니다. Telegram 전용 코드를 보내주세요.';
+  }
+  return '코드를 확인하지 못했습니다. 앱에서 새 코드를 생성해 다시 시도해주세요.';
+}
+
 app.post('/telegram/webhook', express.json(), async (req, res) => {
   try {
     const webhookSecret = String(req.headers['x-telegram-bot-api-secret-token'] || '');
@@ -75,12 +105,29 @@ app.post('/telegram/webhook', express.json(), async (req, res) => {
     const text = String(req.body?.message?.text || '').trim();
     const code = extractLinkCodeFromText(text);
 
-    if (chatId && code) {
-      const result = await consumeLinkCode('telegram', code, chatId);
-      if (result.ok) {
-        console.log(`[telegram-webhook] linked user=${result.userId}`);
-      }
+    if (!chatId) {
+      res.json({ ok: true });
+      return;
     }
+
+    if (!code) {
+      await replyTelegramMessage({
+        chatId,
+        text: '앱에서 생성한 8자리 코드를 보내주세요.',
+      });
+      res.json({ ok: true });
+      return;
+    }
+
+    const result = await consumeLinkCode('telegram', code, chatId);
+    if (result.ok) {
+      console.log(`[telegram-webhook] linked user=${result.userId}`);
+    }
+
+    await replyTelegramMessage({
+      chatId,
+      text: getTelegramLinkReplyText(result),
+    });
 
     res.json({ ok: true });
   } catch (error) {
@@ -110,16 +157,42 @@ app.post('/line/webhook', express.raw({ type: 'application/json' }), async (req,
 
     const events = Array.isArray(payload?.events) ? payload.events : [];
     for (const event of events) {
+      const replyToken = String(event?.replyToken || '').trim();
+      const eventType = String(event?.type || '').trim();
+      const messageType = String(event?.message?.type || '').trim();
       const userId = String(event?.source?.userId || '').trim();
       const text = String(event?.message?.text || '').trim();
       const code = extractLinkCodeFromText(text);
 
-      if (userId && code) {
-        const result = await consumeLinkCode('line', code, userId);
-        if (result.ok) {
-          console.log(`[line-webhook] linked user=${result.userId}`);
-        }
+      if (eventType !== 'message' || messageType !== 'text' || !replyToken) {
+        continue;
       }
+
+      if (!code) {
+        await replyLineMessage({
+          replyToken,
+          text: '앱에서 생성한 8자리 코드를 보내주세요.',
+        });
+        continue;
+      }
+
+      if (!userId) {
+        await replyLineMessage({
+          replyToken,
+          text: '사용자 정보를 확인할 수 없습니다. 다시 시도해주세요.',
+        });
+        continue;
+      }
+
+      const result = await consumeLinkCode('line', code, userId);
+      if (result.ok) {
+        console.log(`[line-webhook] linked user=${result.userId}`);
+      }
+
+      await replyLineMessage({
+        replyToken,
+        text: getLineLinkReplyText(result),
+      });
     }
 
     res.json({ ok: true });
