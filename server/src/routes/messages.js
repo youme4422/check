@@ -239,6 +239,8 @@ messagesRouter.post('/messages/send', async (req, res) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Message dispatch failed.';
     console.error(`[dispatch-failed] userId=${userId} reason=${message}`);
-    sendError(res, 400, 'DISPATCH_FAILED', 'Message dispatch failed.');
+    sendError(res, 400, 'DISPATCH_FAILED', 'Message dispatch failed.', {
+      detail: String(message).slice(0, 300),
+    });
   }
 });
