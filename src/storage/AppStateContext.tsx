@@ -10,6 +10,7 @@ import {
   resetAppStateStorage,
   saveCheckInHistory,
   saveAccountId,
+  saveClientKey,
   saveContacts,
   saveDeadmanLastSentForCheckInAt,
   saveEmergencyMessage,
@@ -24,6 +25,7 @@ type AppStateContextValue = AppState & {
   isReady: boolean;
   recordCheckIn: () => Promise<string>;
   setAccountIdSetting: (value: string) => Promise<void>;
+  setClientKeySetting: (value: string) => Promise<void>;
   setIntervalSetting: (value: number) => Promise<void>;
   setNotificationsSetting: (value: boolean) => Promise<void>;
   setDeadmanLastSentForCheckInSetting: (value: string | null) => Promise<void>;
@@ -55,6 +57,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         const generatedAccountId = createDefaultAccountId();
         nextState = { ...stored, accountId: generatedAccountId };
         await saveAccountId(generatedAccountId);
+      }
+
+      if (!nextState.clientKey) {
+        const generatedClientKey = createDefaultClientKey();
+        nextState = { ...nextState, clientKey: generatedClientKey };
+        await saveClientKey(generatedClientKey);
       }
 
       if (!isMounted) {
@@ -99,6 +107,15 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       .replace(/[^a-zA-Z0-9._-]/g, '');
     setState((current) => ({ ...current, accountId: nextValue }));
     await saveAccountId(nextValue);
+  };
+
+  const setClientKeySetting = async (value: string) => {
+    const nextValue = value
+      .trim()
+      .slice(0, 128)
+      .replace(/[^a-zA-Z0-9_-]/g, '');
+    setState((current) => ({ ...current, clientKey: nextValue }));
+    await saveClientKey(nextValue);
   };
 
   const setIntervalSetting = async (value: number) => {
@@ -181,8 +198,16 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetAllData = async () => {
-    setState(DEFAULT_APP_STATE);
     await resetAppStateStorage();
+    const nextAccountId = createDefaultAccountId();
+    const nextClientKey = createDefaultClientKey();
+    const nextState: AppState = {
+      ...DEFAULT_APP_STATE,
+      accountId: nextAccountId,
+      clientKey: nextClientKey,
+    };
+    setState(nextState);
+    await Promise.all([saveAccountId(nextAccountId), saveClientKey(nextClientKey)]);
   };
 
   return (
@@ -192,6 +217,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         isReady,
         recordCheckIn,
         setAccountIdSetting,
+        setClientKeySetting,
         setIntervalSetting,
         setNotificationsSetting,
         setDeadmanLastSentForCheckInSetting,
@@ -212,6 +238,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 function createDefaultAccountId() {
   const seed = Math.random().toString(36).slice(2, 8);
   return `taeb-${Date.now().toString(36)}-${seed}`;
+}
+
+function createDefaultClientKey() {
+  const part1 = Math.random().toString(36).slice(2, 12);
+  const part2 = Math.random().toString(36).slice(2, 12);
+  const ts = Date.now().toString(36);
+  return `ck_${ts}_${part1}${part2}`;
 }
 
 export function useAppState() {

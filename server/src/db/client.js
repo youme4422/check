@@ -21,7 +21,7 @@ function getPool() {
     if (env.databaseUrl) {
       pool = new Pool({
         connectionString: env.databaseUrl,
-        ssl: { rejectUnauthorized: false },
+        ssl: { rejectUnauthorized: env.pgSslRejectUnauthorized },
         max: 10,
       });
     } else {
@@ -75,6 +75,14 @@ export async function initDatabase() {
       used_count INTEGER NOT NULL DEFAULT 0,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       PRIMARY KEY (month_key, channel)
+    );
+  `);
+
+  await dbQuery(`
+    CREATE TABLE IF NOT EXISTS user_client_keys (
+      user_id TEXT PRIMARY KEY,
+      client_key TEXT NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
 

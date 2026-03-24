@@ -2,12 +2,60 @@ import { Router } from 'express';
 
 import { env } from '../config/env.js';
 import { dispatchMessage } from '../services/message.service.js';
-import { createLinkCode, getMessengerLinks, saveMessengerLinks } from '../store/userStore.js';
+import { createLinkCode, getMessengerLinks, saveMessengerLinks, verifyOrInitClientKey } from '../store/userStore.js';
 import { sendError, sendOk } from '../utils/http.js';
 
 export const messagesRouter = Router();
 
-messagesRouter.get('/config/status', (_req, res) => {
+function readAdminApiKey(req) {
+  const keyFromHeader = String(req.header('x-api-key') || '').trim();
+  const authHeader = String(req.header('authorization') || '').trim();
+  const keyFromBearer = authHeader.toLowerCase().startsWith('bearer ') ? authHeader.slice(7).trim() : '';
+  return keyFromHeader || keyFromBearer;
+}
+
+function getClientKey(req) {
+  return String(req.header('x-client-key') || '').trim();
+}
+
+function isValidUserId(value) {
+  return /^[a-zA-Z0-9._-]{3,64}$/.test(value);
+}
+
+function isValidTelegramChatId(value) {
+  return /^-?\d{5,20}$/.test(value);
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function isValidLineUserId(value) {
+  return /^U[0-9a-fA-F]{32}$/.test(value);
+}
+
+async function authorizeUserRequest(req, res, userId) {
+  const auth = await verifyOrInitClientKey(userId, getClientKey(req));
+  if (auth.ok) {
+    return true;
+  }
+
+  if (auth.reason === 'invalid_client_key') {
+    sendError(res, 401, 'INVALID_CLIENT_KEY', 'x-client-key is required and must be 16-128 chars.');
+    return false;
+  }
+
+  sendError(res, 401, 'CLIENT_KEY_MISMATCH', 'Client key mismatch for this account.');
+  return false;
+}
+
+messagesRouter.get('/config/status', (req, res) => {
+  const apiKey = readAdminApiKey(req);
+  if (!apiKey || apiKey !== env.serverApiKey) {
+    sendError(res, 401, 'AUTH_REQUIRED', 'API key is required.');
+    return;
+  }
+
   sendOk(res, {
     dbConfigured: Boolean(env.databaseUrl || (env.pgHost && env.pgDatabase && env.pgUser && env.pgPassword)),
     channels: {
@@ -30,6 +78,10 @@ messagesRouter.get('/users/:userId/messenger-links', async (req, res) => {
     return;
   }
 
+  if (!(await authorizeUserRequest(req, res, userId))) {
+    return;
+  }
+
   try {
     const links = await getMessengerLinks(userId);
     sendOk(res, {
@@ -45,22 +97,6 @@ messagesRouter.get('/users/:userId/messenger-links', async (req, res) => {
   }
 });
 
-function isValidUserId(value) {
-  return /^[a-zA-Z0-9._-]{3,64}$/.test(value);
-}
-
-function isValidTelegramChatId(value) {
-  return /^-?\d{5,20}$/.test(value);
-}
-
-function isValidEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-function isValidLineUserId(value) {
-  return /^U[0-9a-fA-F]{32}$/.test(value);
-}
-
 messagesRouter.post('/users/:userId/messenger-links', async (req, res) => {
   try {
     const userId = String(req.params.userId || '').trim();
@@ -75,7 +111,10 @@ messagesRouter.post('/users/:userId/messenger-links', async (req, res) => {
       return;
     }
 
-    // Telegram/email format
+    if (!(await authorizeUserRequest(req, res, userId))) {
+      return;
+    }
+
     if (channel || chatId) {
       if (!['line', 'telegram', 'email'].includes(channel)) {
         sendError(res, 400, 'UNSUPPORTED_CHANNEL', 'Only line, telegram, or email channel is enabled in this mode.');
@@ -114,7 +153,6 @@ messagesRouter.post('/users/:userId/messenger-links', async (req, res) => {
       return;
     }
 
-    // Backward compatibility: { lineUserId, telegramChatId, email }
     const hasLine = Boolean(lineUserId);
     const hasTelegram = Boolean(telegramChatId);
     const hasEmail = Boolean(email);
@@ -152,12 +190,16 @@ messagesRouter.post('/users/:userId/messenger-links', async (req, res) => {
   }
 });
 
-messagesRouter.post('/users/:userId/link-codes', (req, res) => {
+messagesRouter.post('/users/:userId/link-codes', async (req, res) => {
   const userId = String(req.params.userId || '').trim();
   const channel = String(req.body?.channel || '').trim().toLowerCase();
 
   if (!isValidUserId(userId)) {
     sendError(res, 400, 'INVALID_USER_ID', 'userId must be 3-64 chars: letters, numbers, dot, underscore, or hyphen.');
+    return;
+  }
+
+  if (!(await authorizeUserRequest(req, res, userId))) {
     return;
   }
 
@@ -202,6 +244,10 @@ messagesRouter.post('/messages/send', async (req, res) => {
 
   if (!isValidUserId(userId)) {
     sendError(res, 400, 'INVALID_USER_ID', 'userId must be 3-64 chars: letters, numbers, dot, underscore, or hyphen.');
+    return;
+  }
+
+  if (!(await authorizeUserRequest(req, res, userId))) {
     return;
   }
 

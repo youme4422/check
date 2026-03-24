@@ -3,6 +3,7 @@ import { sendError } from '../utils/http.js';
 
 const ipBuckets = new Map();
 const userBuckets = new Map();
+let requestCounter = 0;
 
 function getClientIp(req) {
   const forwarded = String(req.header('x-forwarded-for') || '').split(',')[0].trim();
@@ -29,8 +30,27 @@ function checkBucket(map, key, limit, windowMs) {
   return null;
 }
 
+function cleanupExpiredBuckets(windowMs) {
+  const now = Date.now();
+  for (const [key, value] of ipBuckets.entries()) {
+    if (now - value.windowStart > windowMs) {
+      ipBuckets.delete(key);
+    }
+  }
+  for (const [key, value] of userBuckets.entries()) {
+    if (now - value.windowStart > windowMs) {
+      userBuckets.delete(key);
+    }
+  }
+}
+
 export function rateLimitRequest(req, res, next) {
   const windowMs = env.rateLimitWindowSeconds * 1000;
+  requestCounter += 1;
+  if (requestCounter % 200 === 0) {
+    cleanupExpiredBuckets(windowMs);
+  }
+
   const userId = String(req.params.userId || req.body?.userId || '').trim();
   const ip = getClientIp(req);
 

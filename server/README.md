@@ -4,7 +4,8 @@ This backend currently supports:
 - LINE bot delivery
 - Telegram bot delivery
 - Email delivery (Resend or SMTP)
-- API key auth
+- per-user client key auth for app endpoints
+- admin API key auth for status endpoint
 - rate limiting
 - per-user cooldown
 
@@ -77,7 +78,6 @@ Steps:
    - `GET https://<your-domain>/api/config/status` with `x-api-key`.
 4. Use that HTTPS domain in Expo build env:
    - `EXPO_PUBLIC_MESSENGER_SERVER_BASE_URL=https://<your-domain>`
-   - `EXPO_PUBLIC_MESSENGER_SERVER_API_KEY=<SERVER_API_KEY>`
 
 If `DATABASE_URL` is set, the server will use PostgreSQL and auto-create required tables.
 If `DATABASE_URL` is empty but `PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD` are set, PostgreSQL is also enabled.
@@ -85,10 +85,11 @@ If `DATABASE_URL` is empty, it falls back to in-memory mode (not recommended for
 
 ## API Auth
 
-All `/api/*` requests require:
-- `x-api-key: <SERVER_API_KEY>`
-or
-- `Authorization: Bearer <SERVER_API_KEY>`
+- User endpoints (`/api/users/*`, `/api/messages/send`) require:
+  - `x-client-key: <device_client_key>`
+- Admin endpoint (`/api/config/status`) requires:
+  - `x-api-key: <SERVER_API_KEY>`
+  or `Authorization: Bearer <SERVER_API_KEY>`
 
 ## Link LINE / Telegram (easy mode)
 

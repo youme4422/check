@@ -8,6 +8,7 @@ import { sendTelegramMessage } from './telegram.service.js';
 
 const lastSentAtByUser = new Map();
 const monthlyUsageByChannel = new Map();
+const IN_MEMORY_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 
 function getMonthKey(timestampMs) {
   const d = new Date(timestampMs);
@@ -19,6 +20,22 @@ function getMonthKey(timestampMs) {
 function getNextMonthTimestamp(timestampMs) {
   const d = new Date(timestampMs);
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1, 0, 0, 0, 0);
+}
+
+function cleanupInMemoryState(now = Date.now()) {
+  for (const [userId, sentAt] of lastSentAtByUser.entries()) {
+    if (!Number.isFinite(Number(sentAt)) || now - Number(sentAt) > IN_MEMORY_RETENTION_MS) {
+      lastSentAtByUser.delete(userId);
+    }
+  }
+
+  const currentMonth = getMonthKey(now);
+  for (const [key] of monthlyUsageByChannel.entries()) {
+    const [, monthKey] = String(key).split(':', 2);
+    if (!monthKey || monthKey !== currentMonth) {
+      monthlyUsageByChannel.delete(key);
+    }
+  }
 }
 
 function getConfiguredFreeLimitByChannel(channel) {
@@ -163,6 +180,8 @@ function normalizeRequestedChannels(channel, channels) {
 }
 
 export async function dispatchMessage({ userId, channel, channels, text }) {
+  cleanupInMemoryState();
+
   const cooldownMs = env.messageCooldownMinutes * 60 * 1000;
   const now = Date.now();
   const lastSentAt = await getLastSentAt(userId);

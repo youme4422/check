@@ -41,4 +41,4 @@ services:
       - key: PGPASSWORD
         sync: false
       - key: PGSSLMODE_REJECT_UNAUTHORIZED
-        value: false
+        value: true

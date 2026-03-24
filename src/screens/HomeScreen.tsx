@@ -19,11 +19,24 @@ import { isAllowedExternalUrl } from '../utils/urlSafety';
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 type PickerMode = 'sms' | 'email' | null;
 
+function isLikelyBrokenText(value: string) {
+  return /[\uF900-\uFAFF\uFFFD]/.test(value) || /\?{2,}/.test(value);
+}
+
+function getSafeEmergencyText(customText: string, fallbackText: string) {
+  const trimmed = customText.trim();
+  if (!trimmed) {
+    return fallbackText;
+  }
+  return isLikelyBrokenText(trimmed) ? fallbackText : trimmed;
+}
+
 export function HomeScreen({ navigation }: Props) {
   const { t } = useI18n();
   const { theme, scheme } = useAppTheme();
   const {
     accountId,
+    clientKey,
     lastCheckInAt,
     deadmanLastSentForCheckInAt,
     intervalHours,
@@ -61,6 +74,7 @@ export function HomeScreen({ navigation }: Props) {
   const remainingMs = deadlineAt ? deadlineAt - now : intervalMs;
   const isOverdue = deadlineAt ? remainingMs <= 0 : false;
   const isDispatchDue = dispatchAt ? now >= dispatchAt : false;
+  const safeEmergencyText = getSafeEmergencyText(emergencyMessage, t('messages.emergencyBody'));
 
   useEffect(() => {
     const tryAutoDispatch = async () => {
@@ -89,8 +103,9 @@ export function HomeScreen({ navigation }: Props) {
       try {
         await sendDeadmanAlert({
           accountId,
+          clientKey,
           channels,
-          text: emergencyMessage || t('messages.emergencyBody'),
+          text: safeEmergencyText,
         });
         await setDeadmanLastSentForCheckInSetting(lastCheckInAt);
       } catch {
@@ -101,8 +116,8 @@ export function HomeScreen({ navigation }: Props) {
     void tryAutoDispatch();
   }, [
     accountId,
+    clientKey,
     deadmanLastSentForCheckInAt,
-    emergencyMessage,
     isDispatchDue,
     lastCheckInAt,
     messengerChannels.email,
@@ -111,8 +126,8 @@ export function HomeScreen({ navigation }: Props) {
     messengerLinks.email,
     messengerLinks.lineUserId,
     messengerLinks.telegramId,
+    safeEmergencyText,
     setDeadmanLastSentForCheckInSetting,
-    t,
   ]);
 
   const handleCheckIn = async () => {
@@ -144,7 +159,7 @@ export function HomeScreen({ navigation }: Props) {
   const openComposer = async (mode: Exclude<PickerMode, null>, contact: Contact) => {
     setPickerMode(null);
 
-    const messageText = emergencyMessage || t('messages.emergencyBody');
+    const messageText = safeEmergencyText;
     const body = encodeURIComponent(messageText);
     const subject = encodeURIComponent(t('messages.emergencySubject'));
 

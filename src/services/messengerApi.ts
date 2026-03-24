@@ -1,9 +1,10 @@
-import { MESSENGER_SERVER_API_KEY, MESSENGER_SERVER_BASE_URL } from '../config/appConfig';
+import { MESSENGER_SERVER_BASE_URL } from '../config/appConfig';
 
 type Channel = 'line' | 'telegram' | 'email';
 
 type LinkRecipientsArgs = {
   accountId: string;
+  clientKey: string;
   lineUserId: string;
   telegramChatId: string;
   email: string;
@@ -11,12 +12,14 @@ type LinkRecipientsArgs = {
 
 type SendDeadmanAlertArgs = {
   accountId: string;
+  clientKey: string;
   channels: Channel[];
   text: string;
 };
 
 type CreateLinkCodeArgs = {
   accountId: string;
+  clientKey: string;
   channel: 'line' | 'telegram';
 };
 
@@ -33,13 +36,13 @@ type MessengerLinksResponse = {
 };
 
 export function isMessengerServerConfigured() {
-  return Boolean(MESSENGER_SERVER_BASE_URL.trim() && MESSENGER_SERVER_API_KEY.trim());
+  return Boolean(MESSENGER_SERVER_BASE_URL.trim());
 }
 
-function buildAuthHeaders() {
+function buildAuthHeaders(clientKey: string) {
   return {
     'Content-Type': 'application/json',
-    'x-api-key': MESSENGER_SERVER_API_KEY,
+    'x-client-key': String(clientKey || '').trim(),
   };
 }
 
@@ -50,8 +53,8 @@ export async function linkRecipients(args: LinkRecipientsArgs) {
   }
 
   const response = await fetch(`${baseUrl}/api/users/${encodeURIComponent(args.accountId)}/messenger-links`, {
-    method: 'POST',
-    headers: buildAuthHeaders(),
+      method: 'POST',
+    headers: buildAuthHeaders(args.clientKey),
     body: JSON.stringify({
       lineUserId: args.lineUserId,
       telegramChatId: args.telegramChatId,
@@ -72,8 +75,8 @@ export async function sendDeadmanAlert(args: SendDeadmanAlertArgs) {
   }
 
   const response = await fetch(`${baseUrl}/api/messages/send`, {
-    method: 'POST',
-    headers: buildAuthHeaders(),
+      method: 'POST',
+    headers: buildAuthHeaders(args.clientKey),
     body: JSON.stringify({
       userId: args.accountId,
       channels: args.channels,
@@ -94,8 +97,8 @@ export async function createMessengerLinkCode(args: CreateLinkCodeArgs): Promise
   }
 
   const response = await fetch(`${baseUrl}/api/users/${encodeURIComponent(args.accountId)}/link-codes`, {
-    method: 'POST',
-    headers: buildAuthHeaders(),
+      method: 'POST',
+    headers: buildAuthHeaders(args.clientKey),
     body: JSON.stringify({
       channel: args.channel,
     }),
@@ -118,7 +121,7 @@ export async function createMessengerLinkCode(args: CreateLinkCodeArgs): Promise
   };
 }
 
-export async function getMessengerLinks(accountId: string): Promise<MessengerLinksResponse> {
+export async function getMessengerLinks(accountId: string, clientKey: string): Promise<MessengerLinksResponse> {
   const baseUrl = MESSENGER_SERVER_BASE_URL.trim();
   if (!baseUrl) {
     throw new Error('Messenger server URL is not configured.');
@@ -126,7 +129,7 @@ export async function getMessengerLinks(accountId: string): Promise<MessengerLin
 
   const response = await fetch(`${baseUrl}/api/users/${encodeURIComponent(accountId)}/messenger-links`, {
     method: 'GET',
-    headers: buildAuthHeaders(),
+    headers: buildAuthHeaders(clientKey),
   });
 
   if (!response.ok) {

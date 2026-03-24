@@ -10,8 +10,8 @@ module.exports = () => ({
     extra: {
       ...extra,
       messengerServerBaseUrl: process.env.EXPO_PUBLIC_MESSENGER_SERVER_BASE_URL || '',
-      messengerServerApiKey: process.env.EXPO_PUBLIC_MESSENGER_SERVER_API_KEY || '',
       lineOfficialAccountId: process.env.EXPO_PUBLIC_LINE_OFFICIAL_ACCOUNT_ID || '',
+      telegramBotUsername: process.env.EXPO_PUBLIC_TELEGRAM_BOT_USERNAME || '',
     },
   },
 });

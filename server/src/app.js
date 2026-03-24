@@ -3,7 +3,6 @@ import crypto from 'node:crypto';
 
 import { env } from './config/env.js';
 import { initDatabase, isDatabaseEnabled } from './db/client.js';
-import { requireApiAuth } from './middleware/auth.js';
 import { rateLimitRequest } from './middleware/rateLimit.js';
 import { messagesRouter } from './routes/messages.js';
 import { replyLineMessage } from './services/line.service.js';
@@ -225,7 +224,7 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.use('/api', requireApiAuth, rateLimitRequest);
+app.use('/api', rateLimitRequest);
 app.use('/api', messagesRouter);
 
 app.use((err, _req, res, _next) => {

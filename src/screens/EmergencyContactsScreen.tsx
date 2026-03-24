@@ -8,14 +8,26 @@ import { useI18n } from '../i18n/I18nProvider';
 import { useAppState } from '../storage/AppStateContext';
 import { useAppTheme } from '../theme/ThemeProvider';
 
+function isLikelyBrokenText(value: string) {
+  return /[\uF900-\uFAFF\uFFFD]/.test(value) || /\?{2,}/.test(value);
+}
+
+function getSafeDraftText(customText: string, fallbackText: string) {
+  const trimmed = customText.trim();
+  if (!trimmed) {
+    return fallbackText;
+  }
+  return isLikelyBrokenText(trimmed) ? fallbackText : trimmed;
+}
+
 export function EmergencyContactsScreen() {
   const { t } = useI18n();
   const { theme } = useAppTheme();
   const { emergencyMessage, setEmergencyMessageSetting } = useAppState();
-  const [messageDraft, setMessageDraft] = useState(emergencyMessage || t('messages.emergencyBody'));
+  const [messageDraft, setMessageDraft] = useState(getSafeDraftText(emergencyMessage, t('messages.emergencyBody')));
 
   useEffect(() => {
-    setMessageDraft(emergencyMessage || t('messages.emergencyBody'));
+    setMessageDraft(getSafeDraftText(emergencyMessage, t('messages.emergencyBody')));
   }, [emergencyMessage, t]);
 
   return (

@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { dbQuery, isDatabaseEnabled } from '../db/client.js';
 
 const users = new Map();
+const userClientKeys = new Map();
 const linkCodes = new Map();
 const LINK_CODE_TTL_MINUTES = Number(process.env.LINK_CODE_TTL_MINUTES || 30);
 const LINK_CODE_TTL_MS = Math.max(1, LINK_CODE_TTL_MINUTES) * 60 * 1000;
@@ -108,6 +109,71 @@ export async function getMessengerLinks(userId) {
   }
 
   return users.get(userId) || null;
+}
+
+function normalizeClientKey(value) {
+  return String(value || '').trim();
+}
+
+function isValidClientKey(value) {
+  return /^[a-zA-Z0-9_-]{16,128}$/.test(value);
+}
+
+export async function verifyOrInitClientKey(userId, clientKey) {
+  const normalizedUserId = String(userId || '').trim();
+  const normalizedKey = normalizeClientKey(clientKey);
+
+  if (!normalizedUserId || !isValidClientKey(normalizedKey)) {
+    return { ok: false, reason: 'invalid_client_key' };
+  }
+
+  if (isDatabaseEnabled()) {
+    const lookup = await dbQuery(
+      `
+      SELECT client_key
+      FROM user_client_keys
+      WHERE user_id = $1
+      LIMIT 1;
+      `,
+      [normalizedUserId]
+    );
+    const existing = String(lookup.rows?.[0]?.client_key || '').trim();
+
+    if (!existing) {
+      await dbQuery(
+        `
+        INSERT INTO user_client_keys (user_id, client_key, updated_at)
+        VALUES ($1, $2, NOW())
+        ON CONFLICT (user_id)
+        DO UPDATE SET
+          client_key = user_client_keys.client_key,
+          updated_at = user_client_keys.updated_at;
+        `,
+        [normalizedUserId, normalizedKey]
+      );
+      userClientKeys.set(normalizedUserId, normalizedKey);
+      return { ok: true, initialized: true };
+    }
+
+    if (existing === normalizedKey) {
+      userClientKeys.set(normalizedUserId, normalizedKey);
+      return { ok: true, initialized: false };
+    }
+
+    return { ok: false, reason: 'client_key_mismatch' };
+  }
+
+  const existing = String(userClientKeys.get(normalizedUserId) || '').trim();
+  if (!existing) {
+    userClientKeys.set(normalizedUserId, normalizedKey);
+    return { ok: true, initialized: true };
+  }
+
+  if (existing === normalizedKey) {
+    return { ok: true, initialized: false };
+  }
+
+  return { ok: false, reason: 'client_key_mismatch' };
 }
 
 export function createLinkCode(userId, channel) {

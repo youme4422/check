@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { AppButton } from '../components/AppButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { SectionCard } from '../components/SectionCard';
-import { LINE_OFFICIAL_ACCOUNT_ID } from '../config/appConfig';
+import { LINE_OFFICIAL_ACCOUNT_ID, TELEGRAM_BOT_USERNAME as TELEGRAM_BOT_USERNAME_FROM_CONFIG } from '../config/appConfig';
 import { useI18n } from '../i18n/I18nProvider';
 import { createMessengerLinkCode, getMessengerLinks, linkRecipients } from '../services/messengerApi';
 import { copyText } from '../storage/copy';
@@ -19,12 +19,13 @@ type FormState = {
   email: string;
 };
 
-const TELEGRAM_BOT_USERNAME = 'TaeB_Aiert_Bot';
+const TELEGRAM_BOT_USERNAME = TELEGRAM_BOT_USERNAME_FROM_CONFIG || 'taeb_alert_bot';
 
 export function MessengerLinksScreen() {
   const { t, locale } = useI18n();
   const { theme } = useAppTheme();
-  const { accountId, messengerChannels, messengerLinks, setMessengerChannelsSetting, setMessengerLinksSetting } = useAppState();
+  const { accountId, clientKey, messengerChannels, messengerLinks, setMessengerChannelsSetting, setMessengerLinksSetting } =
+    useAppState();
   const [isCheckingLinks, setIsCheckingLinks] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<{ line: string; telegram: string }>({ line: '', telegram: '' });
   const [form, setForm] = useState<FormState>({
@@ -36,38 +37,64 @@ export function MessengerLinksScreen() {
 
   const ui = getMessengerUiText(locale);
 
-  const openLineChat = async () => {
-    const officialIdRaw = LINE_OFFICIAL_ACCOUNT_ID.trim();
-    const officialId = officialIdRaw ? (officialIdRaw.startsWith('@') ? officialIdRaw : `@${officialIdRaw}`) : '';
-    const lineIdForPath = officialId.replace('@', '');
-    const urls =
-      Platform.OS === 'android'
-        ? [
-            ...(officialId ? [`line://oaMessage/${lineIdForPath}`] : []),
-            ...(officialId ? [`intent://oaMessage/${lineIdForPath}#Intent;scheme=line;package=jp.naver.line.android;end`] : []),
-            ...(officialId ? [`https://line.me/R/oaMessage/${officialId}`] : []),
-            ...(officialId ? [`line://ti/p/${officialId}`] : []),
-            ...(officialId ? [`intent://ti/p/${officialId}#Intent;scheme=line;package=jp.naver.line.android;end`] : []),
-            ...(officialId ? [`https://line.me/R/ti/p/${officialId}`] : []),
-            'https://line.me',
-          ]
-        : [
-            ...(officialId ? [`line://oaMessage/${lineIdForPath}`] : []),
-            ...(officialId ? [`https://line.me/R/oaMessage/${officialId}`] : []),
-            ...(officialId ? [`line://ti/p/${officialId}`] : []),
-            ...(officialId ? [`https://line.me/R/ti/p/${officialId}`] : []),
-            'https://line.me',
-          ];
+  const tryOpenUrls = async (urls: string[]) => {
+    for (const rawUrl of urls) {
+      const url = String(rawUrl || '').trim();
+      if (!url) continue;
 
-    for (const url of urls) {
       try {
+        const isHttp = url.startsWith('http://') || url.startsWith('https://');
+        if (!isHttp) {
+          const canOpen = await Linking.canOpenURL(url);
+          if (!canOpen) continue;
+        }
+
         await Linking.openURL(url);
-        return;
+        return true;
       } catch {
         // try next
       }
     }
-    Alert.alert(ui.openFailedTitle, ui.openFailedBody('LINE'));
+
+    return false;
+  };
+
+  const openLineChat = async () => {
+    const officialIdRaw = LINE_OFFICIAL_ACCOUNT_ID.trim();
+    const normalized = officialIdRaw.replace(/\s+/g, '');
+    const officialId = normalized ? (normalized.startsWith('@') ? normalized : `@${normalized}`) : '';
+    const lineIdForPath = officialId.replace(/^@/, '');
+    const encodedOfficialId = encodeURIComponent(officialId);
+
+    const primaryWebUrl = officialId ? `https://line.me/R/ti/p/${officialId}` : 'https://line.me';
+    const webFallbacks = [
+      ...(officialId ? [`https://line.me/R/ti/p/${officialId}`] : []),
+      ...(officialId ? [`https://line.me/R/ti/p/${encodedOfficialId}`] : []),
+      ...(officialId ? [`https://line.me/R/oaMessage/${officialId}`] : []),
+      ...(officialId ? [`https://line.me/R/oaMessage/${lineIdForPath}`] : []),
+      'https://line.me',
+    ];
+
+    const appFallbacks =
+      Platform.OS === 'android'
+        ? [
+            ...(officialId ? [`line://ti/p/${officialId}`] : []),
+            ...(officialId ? [`line://ti/p/${lineIdForPath}`] : []),
+            ...(officialId ? [`line://oaMessage/${lineIdForPath}`] : []),
+            ...(officialId ? [`intent://ti/p/${officialId}#Intent;scheme=line;package=jp.naver.line.android;end`] : []),
+            ...(officialId ? [`intent://oaMessage/${lineIdForPath}#Intent;scheme=line;package=jp.naver.line.android;end`] : []),
+          ]
+        : [
+            ...(officialId ? [`line://ti/p/${officialId}`] : []),
+            ...(officialId ? [`line://ti/p/${lineIdForPath}`] : []),
+            ...(officialId ? [`line://oaMessage/${lineIdForPath}`] : []),
+          ];
+
+    const opened = await tryOpenUrls([...webFallbacks, ...appFallbacks]);
+    if (opened) return;
+
+    await copyText(primaryWebUrl);
+    Alert.alert(ui.openFailedTitle, `${ui.openFailedBody('LINE')}\n${primaryWebUrl}`);
   };
 
   const openTelegramChat = async () => {
@@ -76,14 +103,9 @@ export function MessengerLinksScreen() {
       `https://t.me/${TELEGRAM_BOT_USERNAME}`,
     ];
 
-    for (const url of urls) {
-      try {
-        await Linking.openURL(url);
-        return;
-      } catch {
-        // try next
-      }
-    }
+    const opened = await tryOpenUrls(urls);
+    if (opened) return;
+
     Alert.alert(ui.openFailedTitle, ui.openFailedBody('Telegram'));
   };
 
@@ -106,6 +128,7 @@ export function MessengerLinksScreen() {
     try {
       const result = await createMessengerLinkCode({
         accountId: normalizedAccountId,
+        clientKey,
         channel,
       });
 
@@ -133,7 +156,7 @@ export function MessengerLinksScreen() {
 
     setIsCheckingLinks(true);
     try {
-      const links = await getMessengerLinks(normalizedAccountId);
+      const links = await getMessengerLinks(normalizedAccountId, clientKey);
       await setMessengerLinksSetting({
         lineUserId: links.lineUserId,
         telegramId: links.telegramChatId,
@@ -208,6 +231,7 @@ export function MessengerLinksScreen() {
       try {
         await linkRecipients({
           accountId: normalizedAccountId,
+          clientKey,
           lineUserId: '',
           telegramChatId: '',
           email: form.email.trim(),

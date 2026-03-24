@@ -5,8 +5,8 @@ export const ANDROID_NOTIFICATION_CHANNEL_ID = 'taeb-reminders';
 
 type ExtraConfig = {
   messengerServerBaseUrl?: string;
-  messengerServerApiKey?: string;
   lineOfficialAccountId?: string;
+  telegramBotUsername?: string;
 };
 
 function getExtraConfig(): ExtraConfig {
@@ -17,5 +17,5 @@ function getExtraConfig(): ExtraConfig {
 const extra = getExtraConfig();
 
 export const MESSENGER_SERVER_BASE_URL = String(extra.messengerServerBaseUrl || '').trim();
-export const MESSENGER_SERVER_API_KEY = String(extra.messengerServerApiKey || '').trim();
 export const LINE_OFFICIAL_ACCOUNT_ID = String(extra.lineOfficialAccountId || '').trim();
+export const TELEGRAM_BOT_USERNAME = String(extra.telegramBotUsername || '').trim();

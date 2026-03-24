@@ -11,6 +11,7 @@ import {
 
 const STORAGE_KEYS = {
   accountId: '@check:accountId',
+  clientKey: '@check:clientKey',
   lastCheckInAt: '@check:lastCheckInAt',
   deadmanLastSentForCheckInAt: '@check:deadmanLastSentForCheckInAt',
   checkInHistory: '@check:checkInHistory',
@@ -31,6 +32,7 @@ export async function loadAppState(): Promise<AppState> {
   const entries = await AsyncStorage.multiGet([
     STORAGE_KEYS.lastCheckInAt,
     STORAGE_KEYS.accountId,
+    STORAGE_KEYS.clientKey,
     STORAGE_KEYS.deadmanLastSentForCheckInAt,
     STORAGE_KEYS.checkInHistory,
     STORAGE_KEYS.intervalHours,
@@ -44,6 +46,7 @@ export async function loadAppState(): Promise<AppState> {
   const values = Object.fromEntries(entries);
   const rawState: AppState = {
     accountId: values[STORAGE_KEYS.accountId] ?? DEFAULT_APP_STATE.accountId,
+    clientKey: values[STORAGE_KEYS.clientKey] ?? DEFAULT_APP_STATE.clientKey,
     lastCheckInAt: values[STORAGE_KEYS.lastCheckInAt] ?? DEFAULT_APP_STATE.lastCheckInAt,
     deadmanLastSentForCheckInAt:
       values[STORAGE_KEYS.deadmanLastSentForCheckInAt] ?? DEFAULT_APP_STATE.deadmanLastSentForCheckInAt,
@@ -73,6 +76,10 @@ export async function saveLastCheckInAt(value: string | null) {
 
 export async function saveAccountId(value: string) {
   await AsyncStorage.setItem(STORAGE_KEYS.accountId, value);
+}
+
+export async function saveClientKey(value: string) {
+  await AsyncStorage.setItem(STORAGE_KEYS.clientKey, value);
 }
 
 export async function saveDeadmanLastSentForCheckInAt(value: string | null) {
@@ -116,6 +123,7 @@ export async function resetAppStateStorage() {
   await AsyncStorage.multiRemove([
     STORAGE_KEYS.lastCheckInAt,
     STORAGE_KEYS.accountId,
+    STORAGE_KEYS.clientKey,
     STORAGE_KEYS.deadmanLastSentForCheckInAt,
     STORAGE_KEYS.checkInHistory,
     STORAGE_KEYS.intervalHours,
@@ -186,6 +194,7 @@ function parseBoolean(raw: string | null | undefined, fallback: boolean) {
 function normalizeAppState(state: AppState): AppState {
   return {
     accountId: normalizeAccountId(state.accountId),
+    clientKey: normalizeClientKey(state.clientKey),
     lastCheckInAt: normalizeIsoDate(state.lastCheckInAt),
     deadmanLastSentForCheckInAt: normalizeIsoDate(state.deadmanLastSentForCheckInAt),
     checkInHistory: normalizeHistory(state.checkInHistory),
@@ -250,6 +259,10 @@ function normalizeAccountId(value: string) {
     .trim()
     .slice(0, 64)
     .replace(/[^a-zA-Z0-9._-]/g, '');
+}
+
+function normalizeClientKey(value: string) {
+  return String(value ?? '').trim().slice(0, 128).replace(/[^a-zA-Z0-9_-]/g, '');
 }
 
 function normalizeEmergencyMessage(value: string) {

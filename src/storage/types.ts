@@ -22,6 +22,7 @@ export type MessengerLinks = {
 
 export type AppState = {
   accountId: string;
+  clientKey: string;
   lastCheckInAt: string | null;
   deadmanLastSentForCheckInAt: string | null;
   checkInHistory: string[];
@@ -35,6 +36,7 @@ export type AppState = {
 
 export const DEFAULT_APP_STATE: AppState = {
   accountId: '',
+  clientKey: '',
   lastCheckInAt: null,
   deadmanLastSentForCheckInAt: null,
   checkInHistory: [],
