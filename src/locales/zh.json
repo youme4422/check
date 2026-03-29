@@ -36,6 +36,8 @@
     "settingsButton": "设置",
     "missedTitle": "漏签提醒",
     "missedBody": "已超过计划签到时间。如有需要，你可以快速向紧急联系人发送消息。",
+    "attentionNeededLabel": "需要注意",
+    "quickActionsLabel": "快捷操作",
     "sendSms": "发送短信",
     "sendEmail": "发送邮件",
     "pickContactTitle": "选择联系人",
@@ -45,6 +47,22 @@
     "composerErrorBody": "请检查设备上的短信或邮件应用后重试。",
     "missingPhone": "所选联系人没有手机号。",
     "missingEmail": "所选联系人没有邮箱地址。"
+  },
+  "onboarding": {
+    "badge": "欢迎",
+    "title": "1分钟完成 TaeB 设置",
+    "subtitle": "按下面步骤完成一次设置，即可马上开始使用。",
+    "languageTitle": "1) 选择语言",
+    "languageHint": "选择后会立即应用到整个应用。",
+    "stepsTitle": "2) 完成这 3 个步骤",
+    "step1Title": "每天点击签到",
+    "step1Body": "在首页点击“今天签到”按钮，记录当前状态。",
+    "step2Title": "连接消息渠道",
+    "step2Body": "按需开启并连接 LINE、Telegram 或 Email。",
+    "step3Title": "保存紧急消息",
+    "step3Body": "提前写好要发送给接收人的简短消息。",
+    "tip": "以上设置都可以在“设置”页面随时修改。",
+    "cta": "立即开始"
   },
   "contacts": {
     "title": "消息内容",

@@ -1,19 +1,23 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { ONBOARDING_STORAGE_KEY, ONBOARDING_VERSION } from '../constants/onboarding';
 import { useI18n } from '../i18n/I18nProvider';
 import { EmergencyContactsScreen } from '../screens/EmergencyContactsScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { MessengerLinksScreen } from '../screens/MessengerLinksScreen';
+import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { useAppState } from '../storage/AppStateContext';
 import { syncScheduledNotifications } from '../storage/notifications';
 import { useAppTheme } from '../theme/ThemeProvider';
 
 export type RootStackParamList = {
+  Onboarding: undefined;
   Home: undefined;
   EmergencyContacts: undefined;
   MessengerLinks: undefined;
@@ -27,6 +31,28 @@ export function AppNavigator() {
   const { isReady: i18nReady, t, locale } = useI18n();
   const appState = useAppState();
   const { theme, scheme } = useAppTheme();
+  const [onboardingReady, setOnboardingReady] = useState(false);
+  const [onboardingDone, setOnboardingDone] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadOnboarding = async () => {
+      const raw = await AsyncStorage.getItem(ONBOARDING_STORAGE_KEY);
+      if (!mounted) {
+        return;
+      }
+
+      setOnboardingDone(raw === ONBOARDING_VERSION);
+      setOnboardingReady(true);
+    };
+
+    void loadOnboarding();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!appState.isReady) {
@@ -47,7 +73,7 @@ export function AppNavigator() {
     locale,
   ]);
 
-  if (!i18nReady || !appState.isReady) {
+  if (!i18nReady || !appState.isReady || !onboardingReady) {
     return (
       <View style={[styles.loading, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />
@@ -82,6 +108,7 @@ export function AppNavigator() {
   return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
+        initialRouteName={onboardingDone ? 'Home' : 'Onboarding'}
         screenOptions={{
           headerStyle: {
             backgroundColor: theme.card,
@@ -98,6 +125,11 @@ export function AppNavigator() {
           },
         }}
       >
+        <Stack.Screen
+          name="Onboarding"
+          component={OnboardingScreen}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen name="Home" component={HomeScreen} options={{ title: t('common.appName') }} />
         <Stack.Screen
           name="EmergencyContacts"

@@ -36,6 +36,8 @@
     "settingsButton": "設定",
     "missedTitle": "チェックイン未実施の警告",
     "missedBody": "予定されたチェックイン時刻を過ぎました。必要であれば緊急連絡先へすぐにメッセージを送信できます。",
+    "attentionNeededLabel": "注意が必要です",
+    "quickActionsLabel": "クイック操作",
     "sendSms": "SMSを送信",
     "sendEmail": "メールを送信",
     "pickContactTitle": "連絡先を選択",
@@ -45,6 +47,22 @@
     "composerErrorBody": "端末のSMSまたはメールアプリの状態を確認して再試行してください。",
     "missingPhone": "選択した連絡先に電話番号がありません。",
     "missingEmail": "選択した連絡先にメールアドレスがありません。"
+  },
+  "onboarding": {
+    "badge": "はじめに",
+    "title": "1分でTaeBを開始",
+    "subtitle": "次の手順を一度設定すれば、すぐに使えます。",
+    "languageTitle": "1) 言語を選択",
+    "languageHint": "選択するとアプリ全体にすぐ反映されます。",
+    "stepsTitle": "2) 3つの必須ステップ",
+    "step1Title": "毎日チェックインする",
+    "step1Body": "ホームの今日のチェックインボタンで状態を記録します。",
+    "step2Title": "メッセンジャーを連携",
+    "step2Body": "必要な LINE・Telegram・Email だけ有効にして連携します。",
+    "step3Title": "緊急メッセージを保存",
+    "step3Body": "受信者に送るメッセージを短く保存しておきます。",
+    "tip": "これらの設定は、あとで設定画面からいつでも変更できます。",
+    "cta": "今すぐ始める"
   },
   "contacts": {
     "title": "メッセージ内容",

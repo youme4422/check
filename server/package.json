@@ -10,7 +10,10 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
-    "nodemailer": "^8.0.2",
+    "nodemailer": "^8.0.4",
     "pg": "^8.20.0"
+  },
+  "overrides": {
+    "path-to-regexp": "0.1.13"
   }
 }

@@ -70,7 +70,7 @@ export function HomeScreen({ navigation }: Props) {
   }, [checkInNotice]);
 
   const deadlineAt = lastCheckInAt ? new Date(lastCheckInAt).getTime() + intervalMs : null;
-  const dispatchAt = lastCheckInAt ? new Date(lastCheckInAt).getTime() + intervalMs * 2 : null;
+  const dispatchAt = deadlineAt;
   const remainingMs = deadlineAt ? deadlineAt - now : intervalMs;
   const isOverdue = deadlineAt ? remainingMs <= 0 : false;
   const isDispatchDue = dispatchAt ? now >= dispatchAt : false;
@@ -227,7 +227,7 @@ export function HomeScreen({ navigation }: Props) {
               { backgroundColor: scheme === 'dark' ? '#352524' : '#FBE9E8', color: theme.warningText },
             ]}
           >
-            Attention Needed
+            {t('home.attentionNeededLabel')}
           </Text>
           <Text style={[styles.bannerTitle, { color: theme.warningText }]}>{t('home.missedTitle')}</Text>
           <Text style={[styles.bannerBody, { color: theme.mutedText }]}>{t('home.missedBody')}</Text>
@@ -266,7 +266,7 @@ export function HomeScreen({ navigation }: Props) {
       </SectionCard>
 
       <View style={[styles.actionPanel, { backgroundColor: theme.softSurface, borderColor: theme.border }]}>
-        <Text style={[styles.panelLabel, { color: theme.mutedText }]}>Quick Actions</Text>
+        <Text style={[styles.panelLabel, { color: theme.mutedText }]}>{t('home.quickActionsLabel')}</Text>
         <View style={styles.quickRow}>
           <View style={styles.quickCell}>
             <AppButton label={t('contacts.title')} onPress={() => navigation.navigate('EmergencyContacts')} variant="secondary" />

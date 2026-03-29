@@ -36,6 +36,8 @@
     "settingsButton": "Settings",
     "missedTitle": "Missed check-in warning",
     "missedBody": "The scheduled check-in time has passed. You can quickly message an emergency contact if needed.",
+    "attentionNeededLabel": "Attention needed",
+    "quickActionsLabel": "Quick actions",
     "sendSms": "Send SMS",
     "sendEmail": "Send email",
     "pickContactTitle": "Choose a contact",
@@ -45,6 +47,22 @@
     "composerErrorBody": "Please check the device SMS or email app and try again.",
     "missingPhone": "The selected contact does not have a phone number.",
     "missingEmail": "The selected contact does not have an email address."
+  },
+  "onboarding": {
+    "badge": "Welcome",
+    "title": "Set up TaeB in 1 minute",
+    "subtitle": "Follow these steps once, then use the app right away.",
+    "languageTitle": "1) Select language",
+    "languageHint": "Your choice is applied immediately across the app.",
+    "stepsTitle": "2) Complete these 3 steps",
+    "step1Title": "Tap Check-in daily",
+    "step1Body": "Use the Today Check-in button on Home to record your status.",
+    "step2Title": "Connect messenger channels",
+    "step2Body": "Enable and link LINE, Telegram, or Email as needed.",
+    "step3Title": "Save an emergency message",
+    "step3Body": "Write a short message that will be sent to your recipient.",
+    "tip": "You can change all of these later in Settings.",
+    "cta": "Start now"
   },
   "contacts": {
     "title": "Message content",

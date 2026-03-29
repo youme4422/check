@@ -236,15 +236,37 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 }
 
 function createDefaultAccountId() {
-  const seed = Math.random().toString(36).slice(2, 8);
+  const seed = generateToken(12);
   return `taeb-${Date.now().toString(36)}-${seed}`;
 }
 
 function createDefaultClientKey() {
-  const part1 = Math.random().toString(36).slice(2, 12);
-  const part2 = Math.random().toString(36).slice(2, 12);
+  const part1 = generateToken(16);
+  const part2 = generateToken(16);
   const ts = Date.now().toString(36);
   return `ck_${ts}_${part1}${part2}`;
+}
+
+function generateToken(length: number) {
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const safeLength = Math.max(1, length);
+
+  const cryptoObj = globalThis.crypto as { getRandomValues?: (array: Uint8Array) => Uint8Array } | undefined;
+  if (cryptoObj?.getRandomValues) {
+    const bytes = new Uint8Array(safeLength);
+    cryptoObj.getRandomValues(bytes);
+    let output = '';
+    for (let i = 0; i < bytes.length; i += 1) {
+      output += alphabet[bytes[i] % alphabet.length];
+    }
+    return output;
+  }
+
+  let fallback = '';
+  for (let i = 0; i < safeLength; i += 1) {
+    fallback += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return fallback;
 }
 
 export function useAppState() {

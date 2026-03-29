@@ -36,6 +36,8 @@
     "settingsButton": "Configuración",
     "missedTitle": "Advertencia de check-in perdido",
     "missedBody": "La hora programada de check-in ya pasó. Si es necesario, puedes enviar rápidamente un mensaje a un contacto de emergencia.",
+    "attentionNeededLabel": "Atención necesaria",
+    "quickActionsLabel": "Acciones rápidas",
     "sendSms": "Enviar SMS",
     "sendEmail": "Enviar correo",
     "pickContactTitle": "Elegir un contacto",
@@ -45,6 +47,22 @@
     "composerErrorBody": "Revisa la app de SMS o correo del dispositivo e inténtalo de nuevo.",
     "missingPhone": "El contacto seleccionado no tiene número de teléfono.",
     "missingEmail": "El contacto seleccionado no tiene correo electrónico."
+  },
+  "onboarding": {
+    "badge": "Bienvenida",
+    "title": "Configura TaeB en 1 minuto",
+    "subtitle": "Sigue estos pasos una vez y podrás usar la app de inmediato.",
+    "languageTitle": "1) Elige el idioma",
+    "languageHint": "Tu elección se aplica al instante en toda la app.",
+    "stepsTitle": "2) Completa estos 3 pasos",
+    "step1Title": "Haz check-in cada día",
+    "step1Body": "En Inicio, pulsa el botón de check-in de hoy para registrar tu estado.",
+    "step2Title": "Conecta canales de mensajería",
+    "step2Body": "Activa y conecta LINE, Telegram o Email según lo que necesites.",
+    "step3Title": "Guarda tu mensaje de emergencia",
+    "step3Body": "Escribe un mensaje breve para la persona que lo recibirá.",
+    "tip": "Puedes cambiar todo esto después desde Configuración.",
+    "cta": "Empezar ahora"
   },
   "contacts": {
     "title": "Contenido del mensaje",

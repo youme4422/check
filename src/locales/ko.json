@@ -36,6 +36,8 @@
     "settingsButton": "설정",
     "missedTitle": "체크인 누락 경고",
     "missedBody": "예정된 체크인 시간이 지났습니다. 필요하면 긴급 연락처로 빠르게 메시지를 보낼 수 있습니다.",
+    "attentionNeededLabel": "주의 필요",
+    "quickActionsLabel": "빠른 실행",
     "sendSms": "문자 보내기",
     "sendEmail": "이메일 보내기",
     "pickContactTitle": "연락처 선택",
@@ -45,6 +47,22 @@
     "composerErrorBody": "기기의 문자 또는 이메일 앱 상태를 확인한 뒤 다시 시도해 주세요.",
     "missingPhone": "선택한 연락처에 전화번호가 없습니다.",
     "missingEmail": "선택한 연락처에 이메일 주소가 없습니다."
+  },
+  "onboarding": {
+    "badge": "시작 안내",
+    "title": "1분 만에 TaeB 시작하기",
+    "subtitle": "아래 순서대로 한 번만 설정하면 바로 사용할 수 있습니다.",
+    "languageTitle": "1) 언어 선택",
+    "languageHint": "선택 즉시 앱 전체 언어가 변경됩니다.",
+    "stepsTitle": "2) 필수 설정 3단계",
+    "step1Title": "매일 체크인 누르기",
+    "step1Body": "홈 화면의 오늘 체크인 버튼으로 상태를 기록하세요.",
+    "step2Title": "메신저 채널 연결",
+    "step2Body": "LINE, Telegram, Email 중 필요한 채널만 켜서 연결하세요.",
+    "step3Title": "긴급 메시지 저장",
+    "step3Body": "연락을 받을 사람에게 보낼 메시지를 짧게 저장하세요.",
+    "tip": "모든 항목은 설정 화면에서 언제든지 다시 바꿀 수 있습니다.",
+    "cta": "바로 시작하기"
   },
   "contacts": {
     "title": "메시지 내용",

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { env } from '../config/env.js';
+import { isValidServerApiKey } from '../middleware/auth.js';
 import { dispatchMessage } from '../services/message.service.js';
 import { createLinkCode, getMessengerLinks, saveMessengerLinks, verifyOrInitClientKey } from '../store/userStore.js';
 import { sendError, sendOk } from '../utils/http.js';
@@ -51,7 +52,7 @@ async function authorizeUserRequest(req, res, userId) {
 
 messagesRouter.get('/config/status', (req, res) => {
   const apiKey = readAdminApiKey(req);
-  if (!apiKey || apiKey !== env.serverApiKey) {
+  if (!apiKey || !isValidServerApiKey(apiKey)) {
     sendError(res, 401, 'AUTH_REQUIRED', 'API key is required.');
     return;
   }
