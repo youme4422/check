@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>check | 놓치지 않는 안부 체크</title>
+  <meta name="description" content="매일의 안부 체크를 기록하고, 놓친 순간에는 빠르게 연락할 수 있는 check 앱 소개 페이지" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="orb orb-a" aria-hidden="true"></div>
+  <div class="orb orb-b" aria-hidden="true"></div>
+
+  <header class="header">
+    <a class="logo" href="#top">check</a>
+    <nav class="nav">
+      <a href="#about">소개</a>
+      <a href="#impact">가치</a>
+      <a href="#features">기능</a>
+      <a href="#screens">화면</a>
+      <a href="#privacy">개인정보</a>
+    </nav>
+    <a class="header-cta" href="#screens">앱 화면 보기</a>
+  </header>
+
+  <main id="top">
+    <section class="hero section reveal">
+      <div class="hero-copy">
+        <p class="eyebrow">DAILY SAFETY CHECK-IN</p>
+        <h1>무심한 하루를<br />확실한 안심으로</h1>
+        <p>
+          check는 매일 안부 체크를 간단하게 기록하고,
+          미체크인 상황에서 저장된 긴급 연락처로 문자 또는 이메일 동작까지 빠르게 연결해주는 안전 체크인 앱입니다.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#features">핵심 기능 보기</a>
+          <a class="btn btn-ghost" href="#impact">어떤 점이 다른가</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="phone phone-main tilt">
+          <img src="../play-store-assets/phone-screenshot-02-home.png" alt="check 홈 화면" loading="lazy" />
+        </div>
+        <div class="phone phone-sub tilt">
+          <img src="../play-store-assets/phone-screenshot-04-history.png" alt="check 이력 화면" loading="lazy" />
+        </div>
+        <div class="signal-card">
+          <p>Next Check-In</p>
+          <strong>23:58:11</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="ticker">
+      <div class="ticker-track">
+        <span>CHECK-IN</span>
+        <span>COUNTDOWN</span>
+        <span>MISSED ALERT</span>
+        <span>EMERGENCY CONTACT</span>
+        <span>SMS / EMAIL</span>
+        <span>LOCAL STORAGE</span>
+        <span>KOREAN / ENGLISH</span>
+      </div>
+    </section>
+
+    <section id="about" class="section reveal">
+      <p class="eyebrow">ABOUT</p>
+      <h2>복잡함 없이, 필요한 순간엔 빠르게</h2>
+      <p class="section-text">
+        check는 사용자에게 부담 없는 루틴을 제공합니다.
+        하루 한 번 체크인하고, 다음 마감까지 남은 시간을 확인하고,
+        놓쳤다면 바로 긴급 연락 동작으로 이어집니다.
+      </p>
+    </section>
+
+    <section id="impact" class="section reveal">
+      <p class="eyebrow">WHY CHECK</p>
+      <h2>이 앱이 주는 실제 가치</h2>
+      <div class="impact-grid">
+        <article class="impact-card">
+          <h3>루틴 유지</h3>
+          <p>체크인과 카운트다운으로 안부 확인 습관을 자연스럽게 유지합니다.</p>
+        </article>
+        <article class="impact-card">
+          <h3>빠른 대응</h3>
+          <p>미체크인 경고 후 긴급 연락처 문자/이메일 실행까지 바로 이어집니다.</p>
+        </article>
+        <article class="impact-card">
+          <h3>낮은 진입장벽</h3>
+          <p>계정 가입 없이 바로 시작할 수 있어 누구나 쉽게 사용할 수 있습니다.</p>
+        </article>
+      </div>
+      <div class="stats-grid">
+        <article><span>체크인 주기</span><strong>12h / 24h / 48h</strong></article>
+        <article><span>지원 언어</span><strong>한국어 / 영어</strong></article>
+        <article><span>데이터 저장</span><strong>온디바이스 로컬</strong></article>
+      </div>
+    </section>
+
+    <section id="features" class="section reveal">
+      <p class="eyebrow">FEATURES</p>
+      <h2>핵심 기능</h2>
+      <div class="feature-grid">
+        <article class="feature-card"><h3>일일 체크인 버튼</h3><p>한 번의 탭으로 현재 안부를 기록합니다.</p></article>
+        <article class="feature-card"><h3>카운트다운 표시</h3><p>다음 체크인 마감까지 남은 시간을 확인합니다.</p></article>
+        <article class="feature-card"><h3>이력 조회 및 리셋</h3><p>체크인 기록을 확인하고 필요 시 초기화합니다.</p></article>
+        <article class="feature-card"><h3>긴급 연락처 관리</h3><p>추가, 수정, 삭제를 간편하게 처리합니다.</p></article>
+        <article class="feature-card"><h3>문자/이메일 빠른 열기</h3><p>위기 순간 대응 동작으로 즉시 이동합니다.</p></article>
+        <article class="feature-card"><h3>알림 및 언어 설정</h3><p>알림 On/Off와 한국어/영어 전환을 지원합니다.</p></article>
+      </div>
+    </section>
+
+    <section id="screens" class="section reveal">
+      <p class="eyebrow">SCREEN PREVIEW</p>
+      <h2>앱 화면 미리보기</h2>
+      <div class="screen-grid">
+        <figure class="shot"><img src="../play-store-assets/phone-screenshot-01-welcome.png" alt="온보딩 화면" loading="lazy" /><figcaption>온보딩</figcaption></figure>
+        <figure class="shot"><img src="../play-store-assets/phone-screenshot-02-home.png" alt="홈 화면" loading="lazy" /><figcaption>홈</figcaption></figure>
+        <figure class="shot"><img src="../play-store-assets/phone-screenshot-04-history.png" alt="이력 화면" loading="lazy" /><figcaption>이력</figcaption></figure>
+        <figure class="shot"><img src="../play-store-assets/phone-screenshot-05-emergency-contacts.png" alt="긴급 연락처 화면" loading="lazy" /><figcaption>긴급 연락처</figcaption></figure>
+      </div>
+    </section>
+  </main>
+
+  <footer id="privacy" class="section reveal">
+    <p class="eyebrow">PRIVACY</p>
+    <h2>개인정보 처리</h2>
+    <p class="section-text">
+      check는 계정 시스템 없이 동작하며, 사용자 입력 데이터는 기기 로컬 저장소에만 보관됩니다.
+    </p>
+    <p class="section-text">
+      정책 상세:
+      <a href="https://sites.google.com/view/younmecheck/%ED%99%88" target="_blank" rel="noopener noreferrer">개인정보처리방침 보기</a>
+    </p>
+    <p class="copy">© <span id="year"></span> check</p>
+  </footer>
+
+  <script src="./script.js"></script>
+</body>
+</html>
