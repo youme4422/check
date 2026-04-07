@@ -8,15 +8,17 @@ import { SectionCard } from '../components/SectionCard';
 import { ONBOARDING_STORAGE_KEY, ONBOARDING_VERSION } from '../constants/onboarding';
 import { useI18n } from '../i18n/I18nProvider';
 import type { RootStackParamList } from '../navigation/AppNavigator';
+import { useAppState } from '../storage/AppStateContext';
+import { ensureNotificationPermissions } from '../storage/notifications';
 import type { Locale } from '../storage/types';
 import { useAppTheme } from '../theme/ThemeProvider';
 
-const LANGUAGE_OPTIONS: { value: Locale; label: string }[] = [
-  { value: 'ko', label: '한국어' },
-  { value: 'en', label: 'English' },
-  { value: 'ja', label: '日本語' },
-  { value: 'es', label: 'Español' },
-  { value: 'zh', label: '中文' },
+const LANGUAGE_OPTIONS: { value: Locale; labelKey: string }[] = [
+  { value: 'ko', labelKey: 'settings.languageKo' },
+  { value: 'en', labelKey: 'settings.languageEn' },
+  { value: 'ja', labelKey: 'settings.languageJa' },
+  { value: 'es', labelKey: 'settings.languageEs' },
+  { value: 'zh', labelKey: 'settings.languageZh' },
 ];
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Onboarding'>;
@@ -24,11 +26,14 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Onboarding'>;
 export function OnboardingScreen({ navigation }: Props) {
   const { locale, setLocale, t } = useI18n();
   const { theme } = useAppTheme();
+  const { setNotificationsSetting } = useAppState();
 
   const steps = [t('onboarding.step1Title'), t('onboarding.step2Title'), t('onboarding.step3Title')];
 
   const handleStart = async () => {
     await AsyncStorage.setItem(ONBOARDING_STORAGE_KEY, ONBOARDING_VERSION);
+    const granted = await ensureNotificationPermissions();
+    await setNotificationsSetting(granted);
     navigation.replace('Home');
   };
 
@@ -63,7 +68,7 @@ export function OnboardingScreen({ navigation }: Props) {
                 ]}
               >
                 <Text style={[styles.languageChipText, { color: selected ? '#FFFFFF' : theme.text }]}>
-                  {option.label}
+                  {t(option.labelKey)}
                 </Text>
               </Pressable>
             );

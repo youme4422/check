@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { env } from '../config/env.js';
 import { isValidServerApiKey } from '../middleware/auth.js';
 import { dispatchMessage } from '../services/message.service.js';
+import { getDeadmanState, upsertDeadmanState } from '../store/deadmanStore.js';
 import { createLinkCode, getMessengerLinks, saveMessengerLinks, verifyOrInitClientKey } from '../store/userStore.js';
 import { sendError, sendOk } from '../utils/http.js';
 
@@ -33,6 +34,16 @@ function isValidEmail(value) {
 
 function isValidLineUserId(value) {
   return /^U[0-9a-fA-F]{32}$/.test(value);
+}
+
+function toTimestampMs(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+}
+
+function normalizeIntervalHours(value) {
+  const n = Number(value);
+  return [12, 24, 48].includes(n) ? n : null;
 }
 
 async function authorizeUserRequest(req, res, userId) {
@@ -232,6 +243,106 @@ messagesRouter.post('/users/:userId/link-codes', async (req, res) => {
     const message = error instanceof Error ? error.message : 'Unable to create link code.';
     console.error(`[link-code-failed] userId=${userId} reason=${message}`);
     sendError(res, 400, 'LINK_CODE_FAILED', 'Unable to create link code.');
+  }
+});
+
+messagesRouter.get('/users/:userId/deadman-state', async (req, res) => {
+  const userId = String(req.params.userId || '').trim();
+  if (!isValidUserId(userId)) {
+    sendError(res, 400, 'INVALID_USER_ID', 'userId must be 3-64 chars: letters, numbers, dot, underscore, or hyphen.');
+    return;
+  }
+
+  if (!(await authorizeUserRequest(req, res, userId))) {
+    return;
+  }
+
+  try {
+    const state = await getDeadmanState(userId);
+    sendOk(res, {
+      userId,
+      lastCheckInAt: Number(state?.lastCheckInAt || 0),
+      intervalHours: Number(state?.intervalHours || 24),
+      emergencyText: String(state?.emergencyText || ''),
+      channels: {
+        line: Boolean(state?.lineEnabled),
+        telegram: Boolean(state?.telegramEnabled),
+        email: Boolean(state?.emailEnabled),
+      },
+      lastDispatchedForCheckinAt: Number(state?.lastDispatchedForCheckinAt || 0),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to load deadman state.';
+    console.error(`[deadman-state-load-failed] userId=${userId} reason=${message}`);
+    sendError(res, 500, 'DEADMAN_STATE_LOAD_FAILED', 'Unable to load deadman state.');
+  }
+});
+
+messagesRouter.put('/users/:userId/deadman-state', async (req, res) => {
+  const userId = String(req.params.userId || '').trim();
+  if (!isValidUserId(userId)) {
+    sendError(res, 400, 'INVALID_USER_ID', 'userId must be 3-64 chars: letters, numbers, dot, underscore, or hyphen.');
+    return;
+  }
+
+  if (!(await authorizeUserRequest(req, res, userId))) {
+    return;
+  }
+
+  const intervalHours = normalizeIntervalHours(req.body?.intervalHours);
+  if (intervalHours === null) {
+    sendError(res, 400, 'INVALID_INTERVAL_HOURS', 'intervalHours must be one of: 12, 24, 48.');
+    return;
+  }
+
+  const lastCheckInAt = toTimestampMs(req.body?.lastCheckInAt);
+  const emergencyText = String(req.body?.emergencyText || '').trim();
+  const channels = req.body?.channels || {};
+  const lastDispatchedForCheckinAt = toTimestampMs(req.body?.lastDispatchedForCheckinAt);
+
+  if (!lastCheckInAt) {
+    sendError(res, 400, 'INVALID_LAST_CHECKIN_AT', 'lastCheckInAt must be a valid timestamp (ms).');
+    return;
+  }
+
+  if (!emergencyText) {
+    sendError(res, 400, 'EMERGENCY_TEXT_REQUIRED', 'emergencyText is required.');
+    return;
+  }
+
+  if (emergencyText.length > 1000) {
+    sendError(res, 400, 'EMERGENCY_TEXT_TOO_LONG', 'emergencyText must be 1000 characters or fewer.');
+    return;
+  }
+
+  try {
+    const nextState = await upsertDeadmanState(userId, {
+      lastCheckInAt,
+      intervalHours,
+      emergencyText,
+      lineEnabled: Boolean(channels.line),
+      telegramEnabled: Boolean(channels.telegram),
+      emailEnabled: Boolean(channels.email),
+      lastDispatchedForCheckinAt,
+    });
+
+    sendOk(res, {
+      status: 'saved',
+      userId,
+      lastCheckInAt: nextState.lastCheckInAt,
+      intervalHours: nextState.intervalHours,
+      emergencyText: nextState.emergencyText,
+      channels: {
+        line: nextState.lineEnabled,
+        telegram: nextState.telegramEnabled,
+        email: nextState.emailEnabled,
+      },
+      lastDispatchedForCheckinAt: nextState.lastDispatchedForCheckinAt,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to save deadman state.';
+    console.error(`[deadman-state-save-failed] userId=${userId} reason=${message}`);
+    sendError(res, 500, 'DEADMAN_STATE_SAVE_FAILED', 'Unable to save deadman state.');
   }
 });
 

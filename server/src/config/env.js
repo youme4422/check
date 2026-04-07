@@ -36,4 +36,5 @@ export const env = {
   rateLimitPerIp: Math.max(1, parseNumber(process.env.RATE_LIMIT_PER_IP, 120)),
   rateLimitPerUser: Math.max(1, parseNumber(process.env.RATE_LIMIT_PER_USER, 60)),
   rateLimitWindowSeconds: Math.max(1, parseNumber(process.env.RATE_LIMIT_WINDOW_SECONDS, 60)),
+  deadmanScanIntervalSeconds: Math.max(10, parseNumber(process.env.DEADMAN_SCAN_INTERVAL_SECONDS, 60)),
 };

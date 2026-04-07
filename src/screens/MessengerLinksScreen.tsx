@@ -528,10 +528,10 @@ function getMessengerUiText(locale: Locale) {
 
   const uiJa = {
     guideTitle: '連携方法（3ステップ）',
-    guideStep1: '1) コードを作成',
+    guideStep1: '1) コードを生成',
     guideStep2: '2) コードを受信者に共有',
-    guideStep3: '3) 受信者がボットチャットにコード送信',
-    guideTip: '完了後に［接続確認］を押してください。',
+    guideStep3: '3) 受信者がボットチャットでコード送信',
+    guideTip: '完了後に [接続確認] を押してください。',
     codeReadyTitle: 'コード作成完了',
     codeReadyBody: (channel: 'line' | 'telegram', bot: string, code: string) =>
       `${channel === 'line' ? 'LINE' : `Telegram (@${bot})`} チャットで次のコードを送信してください。\n${code}`,
@@ -549,7 +549,7 @@ function getMessengerUiText(locale: Locale) {
     noCodeBody: '先にコードを生成してください。',
     copiedTitle: 'コピー完了',
     copiedBody: 'コードをクリップボードにコピーしました。',
-    copyFailedTitle: 'コピー失敗',
+    copyFailedTitle: 'コピーに失敗しました',
     copyFailedBody: 'コードを長押しして手動でコピーしてください。',
     statusLabel: '状態',
     connectedShort: '接続済み',
@@ -564,7 +564,7 @@ function getMessengerUiText(locale: Locale) {
     codeLabel: 'コード',
     openLineButton: 'LINEを開く',
     openTelegramButton: 'Telegramを開く',
-    openFailedTitle: '起動できませんでした',
+    openFailedTitle: '起動に失敗しました',
     openFailedBody: (app: string) => `${app} を開けませんでした。`,
   };
 
@@ -613,9 +613,9 @@ function getMessengerUiText(locale: Locale) {
   const uiZh = {
     guideTitle: '连接方法（3步）',
     guideStep1: '1) 生成代码',
-    guideStep2: '2) 把代码发给接收人',
+    guideStep2: '2) 将代码发给接收人',
     guideStep3: '3) 接收人在机器人聊天中发送代码',
-    guideTip: '完成后请点击【连接确认】。',
+    guideTip: '完成后点击 [确认连接]。',
     codeReadyTitle: '代码已生成',
     codeReadyBody: (channel: 'line' | 'telegram', bot: string, code: string) =>
       `请在${channel === 'line' ? 'LINE' : `Telegram (@${bot})`}聊天中发送以下代码。\n${code}`,

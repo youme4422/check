@@ -35,6 +35,20 @@ type MessengerLinksResponse = {
   email: string;
 };
 
+type SyncDeadmanStateArgs = {
+  accountId: string;
+  clientKey: string;
+  lastCheckInAt: string;
+  intervalHours: number;
+  emergencyText: string;
+  channels: {
+    line: boolean;
+    telegram: boolean;
+    email: boolean;
+  };
+  lastDispatchedForCheckinAt: string | null;
+};
+
 export function isMessengerServerConfigured() {
   return Boolean(MESSENGER_SERVER_BASE_URL.trim());
 }
@@ -143,4 +157,36 @@ export async function getMessengerLinks(accountId: string, clientKey: string): P
     telegramChatId: String(payload.telegramChatId || '').trim(),
     email: String(payload.email || '').trim().toLowerCase(),
   };
+}
+
+export async function syncDeadmanState(args: SyncDeadmanStateArgs) {
+  const baseUrl = MESSENGER_SERVER_BASE_URL.trim();
+  if (!baseUrl) {
+    return;
+  }
+
+  const safeEmergencyText =
+    String(args.emergencyText || '').trim() ||
+    'Hello. A scheduled safety check-in was missed in TaeB. Please check on me.';
+
+  const response = await fetch(`${baseUrl}/api/users/${encodeURIComponent(args.accountId)}/deadman-state`, {
+    method: 'PUT',
+    headers: buildAuthHeaders(args.clientKey),
+    body: JSON.stringify({
+      lastCheckInAt: Date.parse(args.lastCheckInAt),
+      intervalHours: args.intervalHours,
+      emergencyText: safeEmergencyText,
+      channels: {
+        line: Boolean(args.channels.line),
+        telegram: Boolean(args.channels.telegram),
+        email: Boolean(args.channels.email),
+      },
+      lastDispatchedForCheckinAt: args.lastDispatchedForCheckinAt ? Date.parse(args.lastDispatchedForCheckinAt) : 0,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(body || `Sync deadman state API failed: ${response.status}`);
+  }
 }

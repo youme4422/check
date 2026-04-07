@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { syncDeadmanState } from '../services/messengerApi';
 
 import {
   DEFAULT_APP_STATE,
@@ -79,6 +80,42 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    const lastCheckInAt = state.lastCheckInAt;
+    if (!isReady || !lastCheckInAt || !state.accountId.trim() || !state.clientKey.trim()) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          await syncDeadmanState({
+            accountId: state.accountId,
+            clientKey: state.clientKey,
+            lastCheckInAt,
+            intervalHours: state.intervalHours,
+            emergencyText: state.emergencyMessage,
+            channels: state.messengerChannels,
+            lastDispatchedForCheckinAt: state.deadmanLastSentForCheckInAt,
+          });
+        } catch {
+          // Keep local app flow stable even if server sync is temporarily unavailable.
+        }
+      })();
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [
+    isReady,
+    state.accountId,
+    state.clientKey,
+    state.lastCheckInAt,
+    state.intervalHours,
+    state.emergencyMessage,
+    state.messengerChannels,
+    state.deadmanLastSentForCheckInAt,
+  ]);
 
   const recordCheckIn = async () => {
     const checkedAt = new Date().toISOString();

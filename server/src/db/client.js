@@ -86,5 +86,19 @@ export async function initDatabase() {
     );
   `);
 
+  await dbQuery(`
+    CREATE TABLE IF NOT EXISTS deadman_state (
+      user_id TEXT PRIMARY KEY,
+      last_check_in_at BIGINT NOT NULL DEFAULT 0,
+      interval_hours INTEGER NOT NULL DEFAULT 24,
+      emergency_text TEXT NOT NULL DEFAULT '',
+      line_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+      telegram_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+      email_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+      last_dispatched_for_checkin_at BIGINT NOT NULL DEFAULT 0,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
   return true;
 }

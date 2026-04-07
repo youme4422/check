@@ -17,7 +17,11 @@
     },
     "android": {
       "package": "com.jan26.checkinsafe",
-      "versionCode": 39,
+      "versionCode": 51,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundColor": "#D7E1E3"
+      },
       "permissions": [
         "android.permission.POST_NOTIFICATIONS"
       ],

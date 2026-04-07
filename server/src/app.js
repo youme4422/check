@@ -5,6 +5,7 @@ import { env } from './config/env.js';
 import { initDatabase, isDatabaseEnabled } from './db/client.js';
 import { rateLimitRequest } from './middleware/rateLimit.js';
 import { messagesRouter } from './routes/messages.js';
+import { startDeadmanScheduler } from './services/deadmanScheduler.js';
 import { replyLineMessage } from './services/line.service.js';
 import { replyTelegramMessage } from './services/telegram.service.js';
 import { consumeLinkCode } from './store/userStore.js';
@@ -64,7 +65,7 @@ function getLineLinkReplyText(result) {
     return '연결이 완료되었습니다. 앱으로 돌아가서 LINE 연결 확인 버튼을 눌러주세요.';
   }
   if (result?.reason === 'expired') {
-    return '코드가 만료되었습니다. 앱에서 새 코드를 생성한 후 다시 보내주세요.';
+    return '코드가 만료되었습니다. 앱에서 새 코드를 생성한 뒤 다시 보내주세요.';
   }
   if (result?.reason === 'not_found') {
     return '유효하지 않은 코드입니다. 앱의 최신 코드를 다시 복사해 보내주세요.';
@@ -72,7 +73,7 @@ function getLineLinkReplyText(result) {
   if (result?.reason === 'channel_mismatch') {
     return '채널이 맞지 않는 코드입니다. LINE 전용 코드를 보내주세요.';
   }
-  return '코드를 확인하지 못했습니다. 앱에서 코드를 생성한 뒤 다시 시도해주세요.';
+  return '코드를 확인하지 못했습니다. 앱에서 코드를 생성한 뒤 다시 시도해 주세요.';
 }
 
 function getTelegramLinkReplyText(result) {
@@ -80,7 +81,7 @@ function getTelegramLinkReplyText(result) {
     return '연결이 완료되었습니다. 앱으로 돌아가서 Telegram 연결 확인 버튼을 눌러주세요.';
   }
   if (result?.reason === 'expired') {
-    return '코드가 만료되었습니다. 앱에서 새 코드를 생성한 후 다시 보내주세요.';
+    return '코드가 만료되었습니다. 앱에서 새 코드를 생성한 뒤 다시 보내주세요.';
   }
   if (result?.reason === 'not_found') {
     return '유효하지 않은 코드입니다. 앱의 최신 코드를 다시 복사해 보내주세요.';
@@ -88,7 +89,7 @@ function getTelegramLinkReplyText(result) {
   if (result?.reason === 'channel_mismatch') {
     return '채널이 맞지 않는 코드입니다. Telegram 전용 코드를 보내주세요.';
   }
-  return '코드를 확인하지 못했습니다. 앱에서 코드를 생성한 뒤 다시 시도해주세요.';
+  return '코드를 확인하지 못했습니다. 앱에서 코드를 생성한 뒤 다시 시도해 주세요.';
 }
 
 app.post('/telegram/webhook', express.json(), async (req, res) => {
@@ -177,7 +178,7 @@ app.post('/line/webhook', express.raw({ type: 'application/json' }), async (req,
       if (!userId) {
         await replyLineMessage({
           replyToken,
-          text: '사용자 정보를 확인할 수 없습니다. 다시 시도해주세요.',
+          text: '사용자 정보를 확인할 수 없습니다. 다시 시도해 주세요.',
         });
         continue;
       }
@@ -248,6 +249,14 @@ async function startServer() {
 
   app.listen(env.port, () => {
     console.log(`Check messenger server listening on http://localhost:${env.port}`);
+  });
+
+  const stopScheduler = startDeadmanScheduler(env.deadmanScanIntervalSeconds * 1000);
+  process.on('SIGTERM', () => {
+    stopScheduler();
+  });
+  process.on('SIGINT', () => {
+    stopScheduler();
   });
 }
 
