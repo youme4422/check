@@ -100,5 +100,40 @@ export async function initDatabase() {
     );
   `);
 
+  // Supabase hardening:
+  // 1) enable RLS for public tables
+  // 2) revoke direct table access from anon/authenticated roles
+  const hardeningTables = [
+    'messenger_links',
+    'dispatch_state',
+    'channel_usage',
+    'user_client_keys',
+    'deadman_state',
+  ];
+
+  for (const tableName of hardeningTables) {
+    await dbQuery(`ALTER TABLE public.${tableName} ENABLE ROW LEVEL SECURITY;`);
+
+    await dbQuery(`
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+          EXECUTE 'REVOKE ALL ON TABLE public.${tableName} FROM anon';
+        END IF;
+      END
+      $$;
+    `);
+
+    await dbQuery(`
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+          EXECUTE 'REVOKE ALL ON TABLE public.${tableName} FROM authenticated';
+        END IF;
+      END
+      $$;
+    `);
+  }
+
   return true;
 }
