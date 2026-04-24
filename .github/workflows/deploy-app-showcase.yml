@@ -1,11 +1,6 @@
 name: Deploy App Showcase
 
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "app-showcase/**"
-      - ".github/workflows/deploy-app-showcase.yml"
   workflow_dispatch:
 
 permissions:
