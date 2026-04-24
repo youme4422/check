@@ -23,6 +23,14 @@ const App = () => {
           <p className="mt-1">
             본 서비스는 참고용 자가 체크 도구이며 의학적 진단을 제공하지 않습니다.
           </p>
+          <p className="mt-2">
+            <a
+              href={`${import.meta.env.BASE_URL}privacy.html`}
+              className="font-semibold text-brand-700 underline underline-offset-2"
+            >
+              개인정보 및 이용 안내
+            </a>
+          </p>
         </footer>
       </div>
     </div>
