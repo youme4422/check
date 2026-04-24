@@ -1,4 +1,6 @@
 import DisclaimerCard from "./DisclaimerCard";
+import StepIndicator from "./StepIndicator";
+import VisualHero from "./VisualHero";
 
 type LandingProps = {
   onStart: () => void;
@@ -7,28 +9,45 @@ type LandingProps = {
 const Landing = ({ onStart }: LandingProps) => {
   return (
     <main className="px-4 pb-10 pt-6 sm:px-6">
-      <div className="mx-auto max-w-3xl space-y-5">
-        <section className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-white to-brand-50 p-6 shadow-soft sm:p-8">
-          <h2 className="text-3xl font-extrabold text-slate-800 sm:text-4xl">
-            마음 상태 분포 테스트
-          </h2>
-          <p className="mt-3 text-base text-slate-600 sm:text-lg">
-            우울, 소진, 활력, 회복력까지 지금 내 마음의 분포를 확인해보세요.
-          </p>
-          <button
-            type="button"
-            onClick={onStart}
-            className="mt-6 w-full rounded-xl bg-brand-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-200 sm:w-auto"
-          >
-            테스트 시작하기
-          </button>
-        </section>
+      <div className="mx-auto max-w-4xl space-y-5">
+        <StepIndicator current="start" />
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
-          <p className="text-sm leading-relaxed text-slate-700">
-            이 테스트는 의학적 진단이 아니라, 현재 마음 상태를 돌아보기 위한 자가 체크
-            도구입니다.
-          </p>
+        <section className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-white to-brand-50 p-6 shadow-soft sm:p-8">
+          <div className="grid gap-5 md:grid-cols-[1.1fr_1fr] md:items-center">
+            <div>
+              <p className="inline-flex rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">
+                정답 없는 테스트
+              </p>
+              <h2 className="mt-3 text-3xl font-extrabold text-slate-800 sm:text-4xl">
+                마음 상태 분포 테스트
+              </h2>
+              <p className="mt-3 text-base text-slate-600 sm:text-lg">
+                우울, 소진, 활력, 회복력까지 지금 내 마음의 분포를 확인해보세요.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-2 text-sm">
+                <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-600">
+                  약 3분 소요
+                </span>
+                <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-600">
+                  저장/전송 없음
+                </span>
+                <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-600">
+                  모바일 최적화
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={onStart}
+                className="mt-6 w-full rounded-xl bg-brand-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-200 sm:w-auto"
+              >
+                테스트 시작하기
+              </button>
+            </div>
+
+            <VisualHero />
+          </div>
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">

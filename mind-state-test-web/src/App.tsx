@@ -9,17 +9,24 @@ const App = () => {
   const [screen, setScreen] = useState<Screen>("landing");
 
   return (
-    <div className="min-h-screen bg-canvas text-ink">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,_rgba(20,184,166,0.13),_transparent_45%),radial-gradient(circle_at_80%_20%,_rgba(96,165,250,0.12),_transparent_35%)]" />
+    <div className="min-h-screen overflow-x-hidden bg-canvas text-ink">
+      <div className="pointer-events-none fixed inset-0">
+        <div className="blob blob-1" />
+        <div className="blob blob-2" />
+        <div className="blob blob-3" />
+      </div>
+
       <div className="relative z-10">
         <Header subtitle="지금 내 마음은 어떤 패턴에 가까울까?" />
+
         {screen === "landing" ? (
           <Landing onStart={() => setScreen("test")} />
         ) : (
           <TestFlow onRestartToLanding={() => setScreen("landing")} />
         )}
+
         <footer className="px-4 pb-8 text-center text-xs text-slate-500 sm:px-6">
-          <p>입력한 응답은 기기 밖으로 전송·저장되지 않습니다.</p>
+          <p>답변은 서버로 전송되지 않으며 브라우저 안에서만 계산됩니다.</p>
           <p className="mt-1">
             본 서비스는 참고용 자가 체크 도구이며 의학적 진단을 제공하지 않습니다.
           </p>

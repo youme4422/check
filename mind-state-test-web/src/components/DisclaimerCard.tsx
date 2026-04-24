@@ -8,7 +8,7 @@ const disclaimerText =
 const DisclaimerCard = ({ className = "" }: DisclaimerCardProps) => {
   return (
     <section
-      className={`rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm leading-relaxed text-amber-900 ${className}`}
+      className={`rounded-2xl border border-amber-200 bg-amber-50/85 p-4 text-sm leading-relaxed text-amber-900 ${className}`}
     >
       <p className="font-semibold">안내</p>
       <p className="mt-1">{disclaimerText}</p>

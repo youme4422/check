@@ -38,13 +38,29 @@ export type ScoreResult = {
   shouldShowEmergencyNotice: boolean;
 };
 
+export type ActionDifficulty = "쉬움" | "보통" | "어려움";
+export type ActionTime = "1분" | "5분" | "10분" | "이번 주";
+export type ActionKind = "즉시" | "소통" | "루틴" | "전문가";
+
+export type ActionItem = {
+  id: string;
+  kind: ActionKind;
+  title: string;
+  description: string;
+  difficulty: ActionDifficulty;
+  time: ActionTime;
+};
+
 export type ResultType = {
   id: string;
   name: string;
   shortLabel: string;
+  identityLine: string;
   description: string;
+  summary: string;
   strengths: string[];
   cautions: string[];
   recommendations: string[];
+  actions: ActionItem[];
   condition?: (scores: DimensionScores) => boolean;
 };
