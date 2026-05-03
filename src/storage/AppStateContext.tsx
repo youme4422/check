@@ -134,6 +134,22 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       saveCheckInHistory(nextHistory),
     ]);
 
+    if (state.accountId.trim() && state.clientKey.trim()) {
+      try {
+        await syncDeadmanState({
+          accountId: state.accountId,
+          clientKey: state.clientKey,
+          lastCheckInAt: checkedAt,
+          intervalHours: state.intervalHours,
+          emergencyText: state.emergencyMessage,
+          channels: state.messengerChannels,
+          lastDispatchedForCheckinAt: null,
+        });
+      } catch {
+        // Keep local check-in flow stable even if server is temporarily unavailable.
+      }
+    }
+
     return checkedAt;
   };
 

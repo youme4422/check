@@ -37,11 +37,21 @@ export async function runDeadmanDispatchScan(now = Date.now()) {
         continue;
       }
 
-      await dispatchMessage({
+      const result = await dispatchMessage({
         userId: state.userId,
         channels,
         text,
       });
+
+      const wasDelivered =
+        (result?.status === 'sent' || result?.status === 'sent_partial') &&
+        Array.isArray(result?.deliveredChannels) &&
+        result.deliveredChannels.length > 0;
+
+      if (!wasDelivered) {
+        skipped += 1;
+        continue;
+      }
 
       await upsertDeadmanState(state.userId, {
         lastDispatchedForCheckinAt: state.lastCheckInAt,
